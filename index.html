@@ -15,7 +15,7 @@
         .btn-challenge { background-color: #007aff; }
         .btn-realm { background-color: #5856d6; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; }
+        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; line-height: 1.4; }
         .footer-link { margin-top: 25px; display: block; color: #007aff; text-decoration: none; font-size: 13px; }
     </style>
 </head>
@@ -27,8 +27,8 @@
     <input type="text" id="pass_code" placeholder="請輸入編號" maxlength="12">
     
     <div class="btn-group">
-        <button id="btn1" class="btn-challenge" onclick="startDraw('挑戰賽')">挑戰賽</button>
-        <button id="btn2" class="btn-realm" onclick="startDraw('界域')">界域</button>
+        <button id="btn1" class="btn-challenge" onclick="startDraw('mode1')">挑戰賽</button>
+        <button id="btn2" class="btn-realm" onclick="startDraw('mode2')">界域挑戰賽</button>
     </div>
 
     <div id="result"></div>
@@ -55,7 +55,8 @@
 
         b1.disabled = true; b2.disabled = true;
         resultDiv.style.color = "#333";
-        resultDiv.innerText = "⚡ " + mode + "抽籤中...";
+        const modeTitle = (mode === 'mode1' ? '挑戰賽' : '界域挑戰賽');
+        resultDiv.innerText = "⚡ " + modeTitle + "抽籤中...";
 
         try {
             const response = await fetch(API_URL, {
@@ -67,7 +68,7 @@
 
             if (["A", "B", "C", "D"].includes(text)) {
                 resultDiv.style.color = "#28a745";
-                resultDiv.innerHTML = userName + "<br>" + mode + "組別：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
+                resultDiv.innerHTML = userName + "<br>" + modeTitle + "組別：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
@@ -81,4 +82,3 @@
 </script>
 </body>
 </html>
-
