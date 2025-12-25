@@ -27,7 +27,7 @@
     <button id="drawBtn" onclick="startDraw()">立即抽籤</button>
     <div id="result"></div>
     
-    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時名單 (含隊長)</a>
+    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時名單 </a>
 </div>
 
 <script>
@@ -36,10 +36,9 @@
 
     // 代碼對照表
     const ID_MAP = {
-        "12345678": "男生1", "87654321": "男生2", "11112222": "男生3", "33334444": "男生4",
-        "55556666": "男生5", "77778888": "男生6", "99990000": "男生7", "12123434": "男生8",
-        "22223333": "女生1", "44445555": "女生2", "66667777": "女生3", "88889999": "女生4",
-        "10101010": "女生5", "20202020": "女生6", "30303030": "女生7", "40404040": "女生8"
+        "600181000537": "丫比不管啦", "600181001933": "泡泡喵", "600181001208": "潘萎勃", "600181001620": "奶糖兔",
+        "600181000023": "雲淡風輕€", "600181000224": "紫夜喵喵", "600181001788": "Q比", "600181001053": "貓貓敲可愛",
+        "600181000479": "請叫我市長", "600181000319": "拐", "600181001332": "乙骨憂太シ", "600181001026": "走心小阿姨"
     };
 
     async function startDraw() {
@@ -56,7 +55,7 @@
 
         btn.disabled = true;
         resultDiv.style.color = "#333";
-        resultDiv.innerText = "⚡ 正在連線雲端機房...";
+        resultDiv.innerText = "⚡ 抽籤中...";
 
         try {
             const response = await fetch(API_URL, {
@@ -69,7 +68,7 @@
 
             if (["A", "B", "C", "D"].includes(text)) {
                 resultDiv.style.color = "#28a745";
-                resultDiv.innerHTML = "恭喜 " + userName + "！<br>您的組別為：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
+                resultDiv.innerHTML = userName + "！<br>您的組別為：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
@@ -85,4 +84,5 @@
 
 </body>
 </html>
+
 
