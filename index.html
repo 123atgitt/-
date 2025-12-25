@@ -5,55 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>16人分組抽籤系統</title>
     <style>
-        body { font-family: -apple-system, "Helvetica Neue", sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        h2 { color: #333; margin-bottom: 25px; }
+        h2 { color: #333; margin-bottom: 10px; }
+        p { color: #666; font-size: 14px; margin-bottom: 20px; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
-        button:hover { background-color: #0056b3; }
+        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; margin-top: 10px; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         #result { margin-top: 25px; font-size: 22px; font-weight: bold; color: #d9534f; min-height: 30px; }
-        .footer-link { margin-top: 20px; display: block; color: #888; text-decoration: none; font-size: 14px; }
-        .footer-link:hover { text-decoration: underline; }
+        .footer-link { margin-top: 20px; display: block; color: #007aff; text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>分組抽籤系統</h2>
-    <input type="number" id="p_id" placeholder="輸入您的 ID (1-16)" min="1" max="16">
-    <input type="password" id="safe_code" placeholder="輸入安全碼 (同 ID)">
-    <button id="drawBtn" onclick="startDraw()">點擊抽籤</button>
+    <p>請輸入您的 ID (例如：男生1 或 女生8)</p>
+    <input type="text" id="p_id" placeholder="輸入您的 ID">
+    <button id="drawBtn" onclick="startDraw()">立即抽籤</button>
     <div id="result"></div>
     
-    <a class="footer-link" href="你的試算表共用連結" target="_blank">🔍 查看所有分組紀錄</a>
+    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/你的連結" target="_blank">🔍 查看即時分組結果</a>
 </div>
 
 <script>
-    // --- 重要：請在此處填入你的 Apps Script 網址 ---
     const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
+
+    // 定義合法名單
+    const VALID_NAMES = [
+        "男生1", "男生2", "男生3", "男生4", "男生5", "男生6", "男生7", "男生8",
+        "女生1", "女生2", "女生3", "女生4", "女生5", "女生6", "女生7", "女生8"
+    ];
 
     async function startDraw() {
         const idValue = document.getElementById('p_id').value.trim();
-        const codeValue = document.getElementById('safe_code').value.trim();
         const resultDiv = document.getElementById('result');
         const btn = document.getElementById('drawBtn');
 
-        // 基本驗證
-        if (!idValue || !codeValue) {
-            alert("請填寫 ID 與安全碼！");
+        if (!idValue) {
+            alert("請輸入 ID！");
             return;
         }
 
-        // 規則：安全碼必須等於 ID
-        if (idValue !== codeValue) {
-            alert("安全碼不正確！請輸入與 ID 相同的數字。");
+        // 檢查是否在名單內
+        if (!VALID_NAMES.includes(idValue)) {
+            alert("錯誤：ID 不在名單內！請確保輸入如「男生1」或「女生8」");
             return;
         }
 
-        // 開始動畫與請求
         btn.disabled = true;
-        resultDiv.innerText = "正在為您分配組別...";
+        resultDiv.style.color = "#333";
+        resultDiv.innerText = "正在抽籤中...";
 
         try {
             const response = await fetch(API_URL, {
@@ -62,17 +64,16 @@
             });
             const text = await response.text();
 
-            // 如果回傳結果是單一字母 (A, B, C, D)，顯示成功
             if (["A", "B", "C", "D"].includes(text)) {
                 resultDiv.style.color = "#28a745";
-                resultDiv.innerHTML = "🎉 分配成功！<br>您的組別：<strong>" + text + "</strong>";
+                resultDiv.innerHTML = "🎉 抽籤成功！<br>您的組別：<strong>" + text + "</strong>";
             } else {
-                // 否則顯示錯誤訊息（如：抽過了、名額滿了）
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
+                btn.disabled = false; // 失敗時允許重試
             }
         } catch (error) {
-            resultDiv.innerText = "系統連線失敗，請稍後再試";
+            resultDiv.innerText = "連線失敗，請稍後再試";
             btn.disabled = false;
         }
     }
@@ -80,4 +81,3 @@
 
 </body>
 </html>
-
