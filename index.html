@@ -3,63 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>16人快速分組系統</title>
+    <title>16人分組抽籤系統</title>
     <style>
-        body { font-family: -apple-system, sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
-        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        h2 { color: #1c1e21; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #0084ff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
-        button:disabled { background: #ccc; }
-        #result { margin-top: 20px; font-size: 28px; font-weight: bold; color: #e41e3f; min-height: 40px; }
-        .view-link { margin-top: 20px; display: block; color: #65676b; text-decoration: none; font-size: 14px; }
+        body { font-family: -apple-system, "Helvetica Neue", sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #333; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; transition: background 0.3s; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #result { margin-top: 25px; font-size: 22px; font-weight: bold; color: #d9534f; min-height: 30px; }
+        .footer-link { margin-top: 20px; display: block; color: #888; text-decoration: none; font-size: 14px; }
+        .footer-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h2>分組抽籤</h2>
-        <input type="text" id="p_id" placeholder="請輸入您的選手 ID">
-        <input type="text" id="safe_code" placeholder="請輸入安全碼">
-        <button id="btn" onclick="draw()">立即抽籤</button>
-        <div id="result"></div>
-        <a class="view-link" href="你的試算表共用連結" target="_blank">🔍 查看即時分組名單</a>
-    </div>
 
-    <script>
-        // --- 請修改這裡 ---
-        const WEB_APP_URL = "這裡貼上你在第一階段得到的網址";
-        const CORRECT_SAFE_CODE = "這裡設定你的安全碼";
-        // ----------------
+<div class="container">
+    <h2>分組抽籤系統</h2>
+    <input type="number" id="p_id" placeholder="輸入您的 ID (1-16)" min="1" max="16">
+    <input type="password" id="safe_code" placeholder="輸入安全碼 (同 ID)">
+    <button id="drawBtn" onclick="startDraw()">點擊抽籤</button>
+    <div id="result"></div>
+    
+    <a class="footer-link" href="你的試算表共用連結" target="_blank">🔍 查看所有分組紀錄</a>
+</div>
 
-        async function draw() {
-            const id = document.getElementById('p_id').value.trim();
-            const code = document.getElementById('safe_code').value.trim();
-            const btn = document.getElementById('btn');
-            const resultDiv = document.getElementById('result');
+<script>
+    // --- 重要：請在此處填入你的 Apps Script 網址 ---
+    const API_URL = "你的_APPS_SCRIPT_網頁應用程式_URL";
 
-            if (!id || !code) return alert("請填寫 ID 與安全碼");
-            if (code !== CORRECT_SAFE_CODE) return alert("安全碼錯誤！");
+    async function startDraw() {
+        const idValue = document.getElementById('p_id').value.trim();
+        const codeValue = document.getElementById('safe_code').value.trim();
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('drawBtn');
 
-            btn.disabled = true;
-            resultDiv.innerText = "抽籤中...";
-
-            try {
-                const response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ id: id })
-                });
-                const group = await response.text();
-                
-                if (group.length === 1) { // 得到 A, B, C, D
-                    resultDiv.innerHTML = "🎉 您的組別是：<br>" + group + " 組";
-                } else {
-                    resultDiv.innerText = group; // 顯示錯誤訊息
-                }
-            } catch (e) {
-                resultDiv.innerText = "連線失敗，請重試";
-                btn.disabled = false;
-            }
+        // 基本驗證
+        if (!idValue || !codeValue) {
+            alert("請填寫 ID 與安全碼！");
+            return;
         }
-    </script>
+
+        // 規則：安全碼必須等於 ID
+        if (idValue !== codeValue) {
+            alert("安全碼不正確！請輸入與 ID 相同的數字。");
+            return;
+        }
+
+        // 開始動畫與請求
+        btn.disabled = true;
+        resultDiv.innerText = "正在為您分配組別...";
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({ id: idValue })
+            });
+            const text = await response.text();
+
+            // 如果回傳結果是單一字母 (A, B, C, D)，顯示成功
+            if (["A", "B", "C", "D"].includes(text)) {
+                resultDiv.style.color = "#28a745";
+                resultDiv.innerHTML = "🎉 分配成功！<br>您的組別：<strong>" + text + "</strong>";
+            } else {
+                // 否則顯示錯誤訊息（如：抽過了、名額滿了）
+                resultDiv.style.color = "#d9534f";
+                resultDiv.innerText = text;
+            }
+        } catch (error) {
+            resultDiv.innerText = "系統連線失敗，請稍後再試";
+            btn.disabled = false;
+        }
+    }
+</script>
+
 </body>
 </html>
