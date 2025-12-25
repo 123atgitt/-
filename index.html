@@ -32,11 +32,10 @@
     </div>
 
     <div id="result"></div>
-    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/e/2PACX-1vSiIXwmoahmqORVBqHpzdWor_DtMMiyCuc8lJqnjD6wOW5YNAx171aiaRpkX9KBHazzLW4_r0p3YjvV/pubhtml" target="_blank">🔍 查看即時名單</a>
+    <a class="footer-link" href="https://你的發佈網址" target="_blank">🔍 查看即時名單</a>
 </div>
 
 <script>
-    // 請確認此處為你部署後的最新 URL
     const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
 
     async function startDraw(mode) {
@@ -47,6 +46,7 @@
 
         if (!inputCode) { alert("請輸入編號！"); return; }
 
+        // 暫時禁用按鈕，防止瞬間連按多次
         b1.disabled = true; b2.disabled = true;
         resultDiv.style.color = "#333";
         resultDiv.innerText = "⚡ " + mode + "抽籤中...";
@@ -66,15 +66,16 @@
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
-                b1.disabled = false; b2.disabled = false;
             }
         } catch (error) {
             resultDiv.style.color = "red";
             resultDiv.innerText = "連線失敗";
-            b1.disabled = false; b2.disabled = false;
+        } finally {
+            // ★ 重點修正：無論成功、重複或失敗，最後都讓按鈕恢復可點擊狀態
+            b1.disabled = false; 
+            b2.disabled = false;
         }
     }
 </script>
 </body>
 </html>
-
