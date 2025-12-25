@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16人快速分組系統</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
+        .box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        h2 { color: #1c1e21; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #0084ff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
+        #result { margin-top: 20px; font-size: 28px; font-weight: bold; color: #e41e3f; min-height: 40px; }
+        .view-link { margin-top: 20px; display: block; color: #65676b; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>分組抽籤</h2>
+        <input type="text" id="p_id" placeholder="請輸入您的選手 ID">
+        <input type="text" id="safe_code" placeholder="請輸入安全碼">
+        <button id="btn" onclick="draw()">立即抽籤</button>
+        <div id="result"></div>
+        <a class="view-link" href="你的試算表共用連結" target="_blank">🔍 查看即時分組名單</a>
+    </div>
+
+    <script>
+        // --- 請修改這裡 ---
+        const WEB_APP_URL = "這裡貼上你在第一階段得到的網址";
+        const CORRECT_SAFE_CODE = "這裡設定你的安全碼";
+        // ----------------
+
+        async function draw() {
+            const id = document.getElementById('p_id').value.trim();
+            const code = document.getElementById('safe_code').value.trim();
+            const btn = document.getElementById('btn');
+            const resultDiv = document.getElementById('result');
+
+            if (!id || !code) return alert("請填寫 ID 與安全碼");
+            if (code !== CORRECT_SAFE_CODE) return alert("安全碼錯誤！");
+
+            btn.disabled = true;
+            resultDiv.innerText = "抽籤中...";
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ id: id })
+                });
+                const group = await response.text();
+                
+                if (group.length === 1) { // 得到 A, B, C, D
+                    resultDiv.innerHTML = "🎉 您的組別是：<br>" + group + " 組";
+                } else {
+                    resultDiv.innerText = group; // 顯示錯誤訊息
+                }
+            } catch (e) {
+                resultDiv.innerText = "連線失敗，請重試";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
