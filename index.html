@@ -15,7 +15,7 @@
         .btn-challenge { background-color: #007aff; }
         .btn-realm { background-color: #5856d6; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; }
+        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; word-break: break-all; }
         .footer-link { margin-top: 25px; display: block; color: #007aff; text-decoration: none; font-size: 13px; }
     </style>
 </head>
@@ -36,6 +36,7 @@
 </div>
 
 <script>
+    // ★★★ 請注意：如果你重新部署產生了新網址，這裡必須要換 ★★★
     const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
 
     const ID_MAP = {
@@ -63,6 +64,11 @@
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ id: userName, mode: mode })
             });
+
+            if (!response.ok) {
+                throw new Error("伺服器回應錯誤: " + response.status);
+            }
+
             const text = await response.text();
 
             if (["A", "B", "C", "D"].includes(text)) {
@@ -74,6 +80,8 @@
                 b1.disabled = false; b2.disabled = false;
             }
         } catch (error) {
+            console.error(error); // 這行會讓你在 F12 看到錯誤
+            resultDiv.style.color = "red";
             resultDiv.innerText = "連線失敗";
             b1.disabled = false; b2.disabled = false;
         }
