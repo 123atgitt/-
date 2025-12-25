@@ -3,87 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>16人分組抽籤系統</title>
+    <title>分組抽籤系統</title>
     <style>
         body { font-family: -apple-system, sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        h2 { color: #333; margin-bottom: 10px; }
-        p { color: #666; font-size: 14px; margin-bottom: 25px; }
-        input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; transition: border 0.3s; }
-        input:focus { border-color: #007aff; outline: none; }
-        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 12px; font-size: 18px; cursor: pointer; font-weight: bold; }
+        h2 { color: #333; margin-bottom: 5px; }
+        .desc { color: #666; font-size: 13px; margin-bottom: 20px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; text-align: center; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 15px 5px; color: white; border: none; border-radius: 12px; font-size: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-challenge { background-color: #007aff; }
+        .btn-realm { background-color: #5856d6; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; line-height: 1.5; }
-        .footer-link { margin-top: 25px; display: block; color: #007aff; text-decoration: none; font-size: 14px; font-weight: 500; }
-        .footer-link:hover { text-decoration: underline; }
+        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; }
+        .footer-link { margin-top: 25px; display: block; color: #007aff; text-decoration: none; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>分組抽籤系統</h2>
-    <p>請輸入玩家編號</p>
-    <input type="text" id="pass_code" placeholder="例如：600181000xxx" maxlength="12">
-    <button id="drawBtn" onclick="startDraw()">立即抽籤</button>
-    <div id="result"></div>
+    <p class="desc">請輸入編號後選擇抽籤類型</p>
+    <input type="text" id="pass_code" placeholder="請輸入編號" maxlength="12">
     
-    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時名單 </a>
+    <div class="btn-group">
+        <button id="btn1" class="btn-challenge" onclick="startDraw('挑戰賽')">挑戰賽</button>
+        <button id="btn2" class="btn-realm" onclick="startDraw('界域')">界域</button>
+    </div>
+
+    <div id="result"></div>
+    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時名單</a>
 </div>
 
 <script>
-    // ⚠️ 請替換成你最新的 Apps Script 網址
-    const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
+    const API_URL = "你的_APPS_SCRIPT_網址";
 
-    // 代碼對照表
     const ID_MAP = {
         "600181000537": "丫比不管啦", "600181001933": "泡泡喵", "600181001208": "潘萎勃", "600181001620": "奶糖兔",
         "600181000023": "雲淡風輕€", "600181000224": "紫夜喵喵", "600181001788": "Q比", "600181001053": "貓貓敲可愛",
         "600181000479": "請叫我市長", "600181000319": "拐", "600181001332": "乙骨憂太シ", "600181001026": "走心小阿姨"
     };
 
-    async function startDraw() {
+    async function startDraw(mode) {
         const inputCode = document.getElementById('pass_code').value.trim();
         const resultDiv = document.getElementById('result');
-        const btn = document.getElementById('drawBtn');
+        const b1 = document.getElementById('btn1');
+        const b2 = document.getElementById('btn2');
 
         const userName = ID_MAP[inputCode];
+        if (!userName) { alert("無效的識別碼！"); return; }
 
-        if (!userName) {
-            alert("無效的識別碼，請檢查輸入是否正確！");
-            return;
-        }
-
-        btn.disabled = true;
+        b1.disabled = true; b2.disabled = true;
         resultDiv.style.color = "#333";
-        resultDiv.innerText = "⚡ 抽籤中...";
+        resultDiv.innerText = "⚡ " + mode + "抽籤中...";
 
         try {
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ id: userName })
+                body: JSON.stringify({ id: userName, mode: mode })
             });
-            
             const text = await response.text();
 
             if (["A", "B", "C", "D"].includes(text)) {
                 resultDiv.style.color = "#28a745";
-                resultDiv.innerHTML = userName + "！<br>您的組別為：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
+                resultDiv.innerHTML = userName + "<br>" + mode + "組別：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
-                if (text !== "你已經抽過了！") btn.disabled = false;
+                b1.disabled = false; b2.disabled = false;
             }
         } catch (error) {
-            resultDiv.style.color = "#d9534f";
-            resultDiv.innerText = "連線超時，請檢查網路環境";
-            btn.disabled = false;
+            resultDiv.innerText = "連線失敗";
+            b1.disabled = false; b2.disabled = false;
         }
     }
 </script>
-
 </body>
 </html>
-
-
-
