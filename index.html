@@ -24,14 +24,13 @@
     <input type="text" id="p_id" placeholder="輸入您的 ID">
     <button id="drawBtn" onclick="startDraw()">立即抽籤</button>
     <div id="result"></div>
+    
     <a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時分組結果</a>
-                               
 </div>
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
 
-    // 定義合法名單
     const VALID_NAMES = [
         "男生1", "男生2", "男生3", "男生4", "男生5", "男生6", "男生7", "男生8",
         "女生1", "女生2", "女生3", "女生4", "女生5", "女生6", "女生7", "女生8"
@@ -47,9 +46,8 @@
             return;
         }
 
-        // 檢查是否在名單內
         if (!VALID_NAMES.includes(idValue)) {
-            alert("錯誤：ID 不在名單內！請確保輸入如「男生1」或「女生8」");
+            alert("錯誤：ID 不在名單內！請確保輸入如「男生1」");
             return;
         }
 
@@ -70,7 +68,7 @@
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
-                btn.disabled = false; // 失敗時允許重試
+                btn.disabled = false;
             }
         } catch (error) {
             resultDiv.innerText = "連線失敗，請稍後再試";
@@ -81,10 +79,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
