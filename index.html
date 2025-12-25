@@ -36,14 +36,8 @@
 </div>
 
 <script>
-    // ★★★ 請注意：如果你重新部署產生了新網址，這裡必須要換 ★★★
+    // 請確認此處為你部署後的最新 URL
     const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
-
-    const ID_MAP = {
-        "600181000537": "丫比不管啦", "600181001933": "泡泡喵", "600181001208": "潘萎勃", "600181001620": "奶糖兔",
-        "600181000023": "雲淡風輕€", "600181000224": "紫夜喵喵", "600181001788": "Q比", "600181001053": "貓貓敲可愛",
-        "600181000479": "請叫我市長", "600181000319": "拐", "600181001332": "乙骨憂太シ", "600181001026": "走心小阿姨"
-    };
 
     async function startDraw(mode) {
         const inputCode = document.getElementById('pass_code').value.trim();
@@ -51,8 +45,7 @@
         const b1 = document.getElementById('btn1');
         const b2 = document.getElementById('btn2');
 
-        const userName = ID_MAP[inputCode];
-        if (!userName) { alert("無效的識別碼！"); return; }
+        if (!inputCode) { alert("請輸入編號！"); return; }
 
         b1.disabled = true; b2.disabled = true;
         resultDiv.style.color = "#333";
@@ -62,25 +55,20 @@
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ id: userName, mode: mode })
+                body: JSON.stringify({ rawCode: inputCode, mode: mode })
             });
-
-            if (!response.ok) {
-                throw new Error("伺服器回應錯誤: " + response.status);
-            }
 
             const text = await response.text();
 
             if (["A", "B", "C", "D"].includes(text)) {
                 resultDiv.style.color = "#28a745";
-                resultDiv.innerHTML = userName + "<br>" + mode + "組別：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
+                resultDiv.innerHTML = mode + "組別：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
                 b1.disabled = false; b2.disabled = false;
             }
         } catch (error) {
-            console.error(error); // 這行會讓你在 F12 看到錯誤
             resultDiv.style.color = "red";
             resultDiv.innerText = "連線失敗";
             b1.disabled = false; b2.disabled = false;
