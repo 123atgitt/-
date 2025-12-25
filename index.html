@@ -3,49 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>16人快速抽籤系統</title>
+    <title>16人分組抽籤系統</title>
     <style>
         body { font-family: -apple-system, sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        h2 { color: #333; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
-        button:disabled { background-color: #ccc; }
-        #result { margin-top: 25px; font-size: 20px; font-weight: bold; min-height: 30px; }
+        h2 { color: #333; margin-bottom: 10px; }
+        p { color: #666; font-size: 14px; margin-bottom: 25px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; transition: border 0.3s; }
+        input:focus { border-color: #007aff; outline: none; }
+        button { width: 100%; padding: 14px; background-color: #007aff; color: white; border: none; border-radius: 12px; font-size: 18px; cursor: pointer; font-weight: bold; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #result { margin-top: 25px; font-size: 18px; font-weight: bold; min-height: 40px; line-height: 1.5; }
+        .footer-link { margin-top: 25px; display: block; color: #007aff; text-decoration: none; font-size: 14px; font-weight: 500; }
+        .footer-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>分組抽籤系統</h2>
-    <input type="text" id="pass_code" placeholder="請輸入您的個人識別碼">
-    <button id="drawBtn" onclick="startDraw()">點擊抽籤</button>
+    <p>請輸入您的個人 8 位數識別碼</p>
+    <input type="text" id="pass_code" placeholder="例如：12345678" maxlength="8">
+    <button id="drawBtn" onclick="startDraw()">立即抽籤</button>
     <div id="result"></div>
-    <a style="display:block; margin-top:20px; color:#007aff; text-decoration:none; font-size:14px;" 
-       href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時名單</a>
+    
+    <a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/view" target="_blank">🔍 查看即時名單 (含隊長)</a>
 </div>
 
 <script>
+    // ⚠️ 請替換成你最新的 Apps Script 網址
     const API_URL = "https://script.google.com/macros/s/AKfycbzpCl9Dvi4b5oU6m0J0jyziAGbhIwLosD1fI6B7k8wDpMn2zNN6SLyIRBynm4BysrP_/exec";
 
-    // --- ID 對照表 (請在這裡填入你設定的 16 組代碼) ---
+    // 代碼對照表
     const ID_MAP = {
-        "12345678": "男生1",
-        "87654321": "男生2",
-        "11112222": "男生3",
-        "33334444": "男生4",
-        "55556666": "男生5",
-        "77778888": "男生6",
-        "99990000": "男生7",
-        "12123434": "男生8",
-        "22223333": "女生1",
-        "44445555": "女生2",
-        "66667777": "女生3",
-        "88889999": "女生4",
-        "10101010": "女生5",
-        "20202020": "女生6",
-        "30303030": "女生7",
-        "40404040": "女生8"
+        "12345678": "男生1", "87654321": "男生2", "11112222": "男生3", "33334444": "男生4",
+        "55556666": "男生5", "77778888": "男生6", "99990000": "男生7", "12123434": "男生8",
+        "22223333": "女生1", "44445555": "女生2", "66667777": "女生3", "88889999": "女生4",
+        "10101010": "女生5", "20202020": "女生6", "30303030": "女生7", "40404040": "女生8"
     };
 
     async function startDraw() {
@@ -53,39 +47,41 @@
         const resultDiv = document.getElementById('result');
         const btn = document.getElementById('drawBtn');
 
-        // 1. 檢查代碼是否正確
         const userName = ID_MAP[inputCode];
 
         if (!userName) {
-            alert("無效的識別碼，請重新輸入！");
+            alert("無效的識別碼，請檢查輸入是否正確！");
             return;
         }
 
         btn.disabled = true;
         resultDiv.style.color = "#333";
-        resultDiv.innerText = userName + " 正在抽籤中...";
+        resultDiv.innerText = "⚡ 正在連線雲端機房...";
 
         try {
             const response = await fetch(API_URL, {
                 method: "POST",
-                body: JSON.stringify({ id: userName }) // 送出轉換後的名字，如「男生1」
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ id: userName })
             });
+            
             const text = await response.text();
 
             if (["A", "B", "C", "D"].includes(text)) {
                 resultDiv.style.color = "#28a745";
-                resultDiv.innerHTML = "🎉 " + userName + " 分配成功！<br>組別：<strong>" + text + " 組</strong>";
+                resultDiv.innerHTML = "恭喜 " + userName + "！<br>您的組別為：<span style='font-size:32px; color:#d9534f;'>" + text + "</span>";
             } else {
                 resultDiv.style.color = "#d9534f";
                 resultDiv.innerText = text;
+                if (text !== "你已經抽過了！") btn.disabled = false;
             }
         } catch (error) {
-            resultDiv.innerText = "連線失敗";
+            resultDiv.style.color = "#d9534f";
+            resultDiv.innerText = "連線超時，請檢查網路環境";
             btn.disabled = false;
         }
     }
 </script>
+
 </body>
 </html>
-
-
