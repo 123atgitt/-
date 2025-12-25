@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>分組抽籤系統</title>
+    <title>挑戰賽分組抽籤系統</title>
     <style>
         body { font-family: -apple-system, sans-serif; background-color: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
@@ -22,17 +22,17 @@
 <body>
 
 <div class="container">
-    <h2>分組抽籤系統</h2>
-    <p class="desc">請輸入編號後選擇抽籤類型</p>
-    <input type="text" id="pass_code" placeholder="請輸入編號" maxlength="12">
+    <h2>挑戰賽分組抽籤系統</h2>
+    <p class="desc">請輸入玩家編號</p>
+    <input type="text" id="pass_code" placeholder="600181000xxx" maxlength="12">
     
     <div class="btn-group">
         <button id="btn1" class="btn-challenge" onclick="startDraw('挑戰賽')">挑戰賽</button>
-        <button id="btn2" class="btn-realm" onclick="startDraw('界域')">界域</button>
+        <button id="btn2" class="btn-realm" onclick="startDraw('界域')">界域挑戰賽</button>
     </div>
 
     <div id="result"></div>
-<a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/preview?rm=minimal" target="_blank">🔍 查看即時名單</a>
+<a class="footer-link" href="https://docs.google.com/spreadsheets/d/1Pxn0MNPfTtkOky2riMMKPZxUGnSwGOxt3ec7nuOOmrY/preview?rm=minimal" target="_blank">🔍 查看分組</a>
 </div>
 
 <script>
@@ -79,6 +79,7 @@
 </script>
 </body>
 </html>
+
 
 
 
