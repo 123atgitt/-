@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8b1e1e">
+  <title>驅動 IC 類比面試班</title>
+  <style>
+:root {
+  --bg: #f4f1ea;
+  --paper: #fffcf6;
+  --ink: #1c1916;
+  --muted: #5c564e;
+  --line: #ddd4c6;
+  --accent: #8b1e1e;
+  --accent-soft: #f3e4dc;
+  --ok: #1f6b3a;
+  --bad: #9b1c1c;
+  --chip: #efe8dc;
+  --shadow: 0 8px 24px rgba(40, 28, 16, 0.08);
+  --radius: 16px;
+  --max: 42rem;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+  min-height: 100vh;
+  padding-bottom: 5.5rem;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(244, 241, 234, 0.94);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1rem 0.65rem;
+}
+.app-header .wrap {
+  max-width: var(--max);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.brand { font-weight: 700; letter-spacing: 0.02em; }
+.brand small {
+  display: block;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.day-chip {
+  background: var(--chip);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+main {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.05rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 0.9rem;
+}
+.card h1, .card h2, .card h3 { line-height: 1.3; }
+.card h1 { font-size: 1.45rem; margin: 0.1rem 0 0.6rem; }
+.card h2 { font-size: 1.12rem; margin: 1.1rem 0 0.4rem; }
+.card h3 { font-size: 1rem; margin: 0.9rem 0 0.3rem; }
+.card p { margin: 0.45rem 0; }
+.card ul, .card ol { margin: 0.35rem 0 0.6rem; padding-left: 1.2rem; }
+.card li { margin: 0.25rem 0; }
+.lede { color: var(--muted); font-size: 0.95rem; }
+
+.muted { color: var(--muted); }
+.kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.formula {
+  font-family: "Times New Roman", Times, serif;
+  background: #f7f0e6;
+  border-left: 3px solid var(--accent);
+  padding: 0.65rem 0.8rem;
+  margin: 0.7rem 0;
+  overflow-x: auto;
+  font-size: 0.98rem;
+}
+.warn {
+  background: #fbf1e4;
+  border: 1px solid #ecd2a8;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  margin: 0.8rem 0;
+  font-size: 0.92rem;
+}
+.okbox {
+  background: #eef6ef;
+  border: 1px solid #cfe0d2;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  margin: 0.8rem 0;
+  font-size: 0.92rem;
+}
+
+.task {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.7rem 0;
+  border-top: 1px dashed var(--line);
+}
+.task:first-child { border-top: 0; }
+.badge {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 0.15rem 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.btnrow { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+button, .btn {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  display: inline-block;
+}
+.btn.ghost, button.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.btn.ok { background: var(--ok); }
+button:disabled { opacity: 0.5; }
+
+.mod {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+.mod:hover { text-decoration: none; background: #fbf6ee; }
+.mod .n {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--chip);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.mod.done .n { background: #d9eadc; color: var(--ok); }
+.mod .meta { font-size: 0.8rem; color: var(--muted); }
+.mod .mark { font-size: 0.8rem; color: var(--ok); }
+
+.bar {
+  height: 8px;
+  background: var(--chip);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 0.4rem 0 0.2rem;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+}
+
+.q { margin: 1rem 0; padding-top: 0.4rem; border-top: 1px solid var(--line); }
+.q .stem { font-weight: 650; margin-bottom: 0.45rem; }
+.opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem;
+  margin: 0.35rem 0;
+  font-weight: 500;
+}
+.opt.correct { background: #e7f4ea; border-color: #b7d8c0; }
+.opt.wrong { background: #fbeaea; border-color: #e3bcbc; }
+.explain {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+
+.nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fffaf3;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0.35rem 0 calc(0.35rem + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+.nav a {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0;
+  text-decoration: none;
+}
+.nav a.on, .nav a:hover { color: var(--accent); text-decoration: none; }
+.nav b { display: block; font-size: 1.05rem; font-weight: 800; }
+
+textarea.backup {
+  width: 100%;
+  min-height: 7rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 0.6rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 0.6rem 0;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.45rem;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: #f3ece1; }
+
+@media (min-width: 720px) {
+  body { font-size: 17px; }
+  .card { padding: 1.25rem 1.4rem; }
+}
+
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+window.COURSE = {
+  title: "驅動 IC 類比面試班",
+  weeks: 8,
+  modules: [
+    { id: "m00", n: "00", title: "怎麼用、裝軟體、面試能講什麼", why: "先把路徑跟界線講清楚", mins: 35, kind: "phone" },
+    { id: "m01", n: "01", title: "MOS 當類比元件", why: "所有題目的單位", mins: 50, kind: "phone" },
+    { id: "m02", n: "02", title: "電流鏡、差動對、主動負載", why: "OTA 的零件", mins: 50, kind: "phone" },
+    { id: "m03", n: "03", title: "單級放大器與小訊號", why: "增益從哪來", mins: 45, kind: "phone" },
+    { id: "m04", n: "04", title: "兩級 OTA 與頻率補償", why: "面試最常畫的電路", mins: 70, kind: "phone" },
+    { id: "m05", n: "05", title: "PSRR、CMRR、offset、slew", why: "規格怎麼辯", mins: 45, kind: "phone" },
+    { id: "m06", n: "06", title: "Bandgap", why: "DAC / LDO 的基準", mins: 50, kind: "phone" },
+    { id: "m07", n: "07", title: "LDO", why: "瑞鼎／聯詠幾乎必問", mins: 55, kind: "phone" },
+    { id: "m08", n: "08", title: "Charge pump 與 OSC", why: "驅動 IC 內部電源與時脈", mins: 45, kind: "phone" },
+    { id: "m09", n: "09", title: "Source driver、gamma、面板負載", why: "把你的 panel 經驗接上 CMOS", mins: 50, kind: "phone" },
+    { id: "m10", n: "10", title: "Layout 與 mismatch", why: "沒下過線也要能講", mins: 40, kind: "phone" },
+    { id: "m11", n: "11", title: "面試題庫與白板順序", why: "開口的稿", mins: 60, kind: "phone" }
+  ],
+  labs: [
+    { id: "l00", title: "安裝 LTspice，跑通第一個 NMOS", after: "m00" },
+    { id: "l01", title: "MOS IV、gm、ro", after: "m01" },
+    { id: "l02", title: "電流鏡與 5T OTA", after: "m03" },
+    { id: "l04", title: "兩級 OTA：增益、GBW、PM", after: "m04" },
+    { id: "l06", title: "簡化 bandgap", after: "m06" },
+    { id: "l07", title: "簡化 LDO", after: "m07" },
+    { id: "l08", title: "Dickson pump 或 RC OSC 擇一", after: "m08" }
+  ],
+  exams: [
+    { id: "e01", title: "小考 1：MOS 與鏡", after: ["m01", "m02"], n: 8 },
+    { id: "e02", title: "小考 2：OTA 與補償", after: ["m04", "m05"], n: 8 },
+    { id: "e03", title: "小考 3：Bandgap 與 LDO", after: ["m06", "m07"], n: 8 },
+    { id: "e04", title: "小考 4：驅動 IC 專題", after: ["m08", "m09", "m10"], n: 8 },
+    { id: "efinal", title: "模擬面試筆試", after: ["m11"], n: 12 }
+  ],
+  /* 56 天：平日手機課，週末電腦實驗或考試 */
+  days: []
+};
+
+(function buildDays() {
+  const d = [];
+  const push = (day, phone, lab, exam, note) => d.push({ day, phone, lab, exam, note });
+  push(1, "m00", null, null, "讀完就裝軟體。今晚只看安裝頁，電腦留明天。");
+  push(2, "m00", "l00", null, "電腦：LTspice 安裝並存檔一個 NMOS 電路。");
+  push(3, "m01", null, null, "MOS 區段、gm、ro。手寫 Id–Vds。");
+  push(4, "m01", null, null, "把公式默到可以口算 Vov、gm。");
+  push(5, "m01", "l01", null, "電腦：掃 IV，從曲線讀 gm。");
+  push(6, "m02", null, null, "電流鏡誤差從哪來。");
+  push(7, null, null, "e01", "若 m02 還沒讀完，先補完再考。");
+  push(8, "m02", null, null, "差動對、尾電流、主動負載。");
+  push(9, "m03", null, null, "單級增益。");
+  push(10, "m03", "l02", null, "電腦：5T OTA 開環增益。");
+  push(11, "m04", null, null, "兩級 OTA。這週最重。");
+  push(12, "m04", null, null, "Miller、GBW、相位邊限。");
+  push(13, "m04", "l04", null, "電腦：兩級 amp，調 Cc。");
+  push(14, "m05", null, null, "PSRR / slew / offset。");
+  push(15, null, null, "e02", "OTA 小考。不及格回 m04。");
+  push(16, "m06", null, null, "Bandgap 直覺：VBE + VT。");
+  push(17, "m06", null, null, "startup、電流鏡比例。");
+  push(18, "m06", "l06", null, "電腦：簡易 bandgap。");
+  push(19, "m07", null, null, "LDO 架構。");
+  push(20, "m07", null, null, "dropout、PSRR、load transient。");
+  push(21, "m07", "l07", null, "電腦：LDO 負載階躍。");
+  push(22, null, null, "e03", "Bandgap + LDO。");
+  push(23, "m08", null, null, "Charge pump。");
+  push(24, "m08", null, null, "OSC。對你現在的 OSC config 有幫助。");
+  push(25, "m08", "l08", null, "電腦：pump 或 OSC 做一個。");
+  push(26, "m09", null, null, "Source / gamma / 面板 RC。");
+  push(27, "m09", null, null, "把友達／三星經歷寫成 90 秒。");
+  push(28, "m10", null, null, "Layout、mismatch。");
+  push(29, null, null, "e04", "驅動 IC 專題小考。");
+  push(30, "m11", null, null, "白板順序。對鏡練習。");
+  push(31, "m11", null, null, "把不會的題目抄成錯題本。");
+  push(32, null, null, "efinal", "總考。60% 過關；低於 60% 重讀對應課。");
+  push(33, "m04", "l04", null, "複習週：再跑一次兩級 OTA。");
+  push(34, "m07", null, null, "複習週：LDO 白板默寫。");
+  push(35, "m06", null, null, "複習週：Bandgap 默寫。");
+  push(36, "m09", null, null, "複習週：source driver 故事。");
+  push(37, "m11", null, null, "模擬口試：OTA 15 分鐘。");
+  push(38, "m11", null, null, "模擬口試：LDO 15 分鐘。");
+  push(39, "m05", null, null, "弱項補 PSRR。");
+  push(40, "m10", null, null, "弱項補 matching。");
+  push(41, null, "l04", null, "把 OTA 圖存進面試檔。");
+  push(42, null, "l07", null, "把 LDO 圖存進面試檔。");
+  push(43, "m11", null, null, "瑞鼎／聯詠職缺對照。");
+  push(44, "m01", null, null, "快速過 MOS 公式。");
+  push(45, "m02", null, null, "快速過鏡與差動。");
+  push(46, "m04", null, null, "再畫一次兩級。");
+  push(47, "m07", null, null, "再畫一次 LDO。");
+  push(48, "m06", null, null, "再畫一次 bandgap。");
+  push(49, null, null, "efinal", "第二輪總考，對答案。");
+  push(50, "m11", null, null, "履歷一句話定稿。");
+  push(51, "m09", null, null, "panel 負載數字複習。");
+  push(52, "m08", null, null, "pump / OSC 複習。");
+  push(53, "m05", null, null, "規格題複習。");
+  push(54, "m11", null, null, "口試：完整 45 分鐘流程。");
+  push(55, "m11", null, null, "休息前只看錯題。");
+  push(56, null, null, "efinal", "考前最後一測。");
+  COURSE.days = d;
+})();
+
+window.QUIZZES = {
+  e01: [
+    {
+      q: "飽和區 NMOS，Id 固定時，gm 與 overdrive Vov 的關係？",
+      options: ["gm ∝ Vov", "gm = 2 Id / Vov", "gm ∝ 1 / Id", "gm 與 Vov 無關"],
+      a: 1,
+      exp: "平方律：gm = 2 Id / (Vgs−Vth) = 2 Id / Vov。Id 固定，Vov 愈小 gm 愈大，代價是 W/L 要變大。"
+    },
+    {
+      q: "通道調變使輸出電阻 ro 大約等於？",
+      options: ["μ Cox W/L", "1 / (λ Id)", "2 Id / Vov", "gm / Id"],
+      a: 1,
+      exp: "Id = Id0 (1+λ Vds)，小訊號 ro = ∂Vds/∂Id ≈ 1/(λ Id)。"
+    },
+    {
+      q: "簡單電流鏡，複製誤差的主要來源通常不是？",
+      options: ["λ 造成的 Vds 不同", "Vth mismatch", "負載電容 CL", "W/L 微影誤差"],
+      a: 2,
+      exp: "CL 影響速度與極點，不直接決定直流電流比。鏡的誤差是 λ、mismatch、W/L。"
+    },
+    {
+      q: "差動對要有高 CMRR，最該先改善？",
+      options: ["把輸入對做得很大", "尾電流源的輸出電阻", "把 CL 加大", "把 VDD 降低"],
+      a: 1,
+      exp: "共模被尾電流源擋。尾源 ro 愈高，共模增益愈低，CMRR 愈好。輸入對匹配也很重要，但「尾源 ro」是架構題標準答案。"
+    },
+    {
+      q: "主動負載相對電阻負載，主要好處？",
+      options: ["一定比較省面積", "同樣偏流可以得到更高增益", "沒有極點", "不需要匹配"],
+      a: 1,
+      exp: "主動負載用 MOSFET 的 ro，遠大於同樣壓降的電阻，Av ≈ gm ro 比較高。"
+    },
+    {
+      q: "強反轉飽和，gm / Id 的上限量級大約？",
+      options: ["接近 1/Vov，Vov 典型 0.15–0.3 V", "永遠等於 40 / V", "跟製程無關且固定 1 mS/μA", "等於 λ"],
+      a: 0,
+      exp: "gm/Id = 2/Vov。弱反轉才接近 1/(n VT)≈20–30 V⁻¹。面試講強反轉用 2/Vov。"
+    },
+    {
+      q: "同一電流，把 MOS 的 L 加大，通常？",
+      options: ["gm 上升、ro 下降", "gm 下降、ro 上升", "兩者都下降", "沒有影響"],
+      a: 1,
+      exp: "W/L 變小則 Vov 變大、gm 掉；λ 隨 L 變好，ro 變大。類比常加 L 換增益與 matching。"
+    },
+    {
+      q: "驅動 IC 類比面試畫電流鏡，最少要主動提到？",
+      options: ["只講理想 1:1", "λ、mismatch，以及 cascode 何時要", "只講 FinFET", "只講 Verilog"],
+      a: 1,
+      exp: "中低壓 DDI analog 仍是平面 CMOS 思路。理想比之外要能講誤差與 cascode。"
+    }
+  ],
+  e02: [
+    {
+      q: "兩級 Miller OTA 的 GBW 大約？",
+      options: ["gm6 / (2π CL)", "gm1 / (2π Cc)", "gm1 ro2 gm6 ro6", "ft / 2"],
+      a: 1,
+      exp: "單位增益頻率 ωu ≈ gm1 / Cc。這是最常默寫的公式。"
+    },
+    {
+      q: "Miller 補償把極點拆開之後，右半平面零點怎麼處理？",
+      options: ["加大尾電流", "串 nulling resistor，或用電流緩衝把 Cc 接到低阻抗", "把 Cc 拿掉", "只加 CL"],
+      a: 1,
+      exp: "RHP zero 在 gm6/Cc。串 Rz ≈ 1/gm6 可把 zero 推到左半或抵銷。面試要畫 Rz。"
+    },
+    {
+      q: "相位邊限大概多少通常被當成「夠穩」的起點？",
+      options: ["5°", "20°", "60° 左右", "180°"],
+      a: 2,
+      exp: "教科書常以 PM≈60° 當設計起點。低於 45° 暫態會明顯振盪。"
+    },
+    {
+      q: "slew rate 在 Miller 兩級，常常受限於？",
+      options: ["第一級偏流對 Cc 充電", "Vth", "bandgap 電壓", "封裝 pin 數"],
+      a: 0,
+      exp: "SR ≈ I1 / Cc（或輸出級對 CL）。Source driver 要快速充電面板，SR 是規格。"
+    },
+    {
+      q: "開環增益 Av 很高，但 GBW 不夠，閉環跟隨器會怎樣？",
+      options: ["直流誤差一定很大", "大訊號與高頻跟不上，小步可能還可以", "一定振盪", "PSRR 自動變好"],
+      a: 1,
+      exp: "直流增益管直流精度；GBW 管速度。面試要分開講。"
+    },
+    {
+      q: "5T OTA 增益 Av 約？",
+      options: ["gm1 × (ro2 // ro4)", "gm1 / gm2", "gm1 / (2π CL)", "VDD / Vov"],
+      a: 0,
+      exp: "輸出電阻是 p 鏡與 n 輸出管的 ro 並聯。"
+    },
+    {
+      q: "輸出要推很大的 CL（面板 source 線），補償策略常是？",
+      options: ["只靠內補償、不管 CL", "把輸出級電流與極點一起設計，必要時外補償或 class-AB", "把 Cc 設成 100 pF 就好", "改用純數位"],
+      a: 1,
+      exp: "面板負載是 DDI 的重點。輸出級要能推電容，且負載極點會跑。"
+    },
+    {
+      q: "offset 要小，最基本的 layout 手段？",
+      options: ["輸入對 common-centroid、同方向、加 dummy", "只加去耦電容", "把 L 用最小", "輸出加電感"],
+      a: 0,
+      exp: "差動輸入對匹配決定 Vos。Source driver 通道間 offset 會變成橫條 mura 類問題。"
+    }
+  ],
+  e03: [
+    {
+      q: "Bandgap 想得到與溫度無關的電壓，概念上是？",
+      options: ["純 VBE", "VBE（CTAT）加上加權的 VT ln(n)（PTAT）", "純 VT", "純 VDD"],
+      a: 1,
+      exp: "VBE 負溫、ΔVBE=VT ln(n) 正溫，加權相加約 1.2 V。"
+    },
+    {
+      q: "Bandgap 不加 startup 電路，可能發生？",
+      options: ["增益變負", "鎖在全零電流的錯誤偏置點", "一定過壓燒毀", "自動變成 LDO"],
+      a: 1,
+      exp: "零電流也是平衡點。面試一定要提 startup。"
+    },
+    {
+      q: "LDO 的 Vout 與 Vref、回授電阻？",
+      options: ["Vout = Vref", "Vout = Vref (1 + R1/R2)", "Vout = Vref × gm", "Vout = Vin − Vth"],
+      a: 1,
+      exp: "電阻分壓回授。R1 在上、R2 在下時 Vout = Vref (1+R1/R2)。"
+    },
+    {
+      q: "Dropout voltage 主要取決於？",
+      options: ["bandgap 的 1.25 V", "pass element 在該負載下還能維持調節所需的 Vin−Vout", "OSC 頻率", "GOA 脈寬"],
+      a: 1,
+      exp: "PMOS pass 的 Rds(on)×Iload，或電流源式 pass 的飽和餘裕。"
+    },
+    {
+      q: "LDO PSRR 在高頻變差，常見原因？",
+      options: ["loop gain 掉下來，電源經由 pass 或 parasitics 進來", "VBE 變成正溫", "CL 消失", "gm 變無窮大"],
+      a: 0,
+      exp: "PSRR 靠迴路壓制電源。高頻 Avβ 不夠，就要靠輸出電容與佈局。"
+    },
+    {
+      q: "負載電流突然加大，Vout 先掉再回來。這是？",
+      options: ["load transient；與 bandwidth、輸出電容、bias 有關", "offset", "latch-up", "GOA 失效"],
+      a: 0,
+      exp: "面試常問怎麼改善：加 Cout、提高迴路頻寬、加速輸出級。"
+    },
+    {
+      q: "PMOS pass 相對 NMOS pass 的實際好處？",
+      options: ["遷移率較高", "比較容易做 low dropout（gate 可以拉到地）", "沒有體效應", "不需要 bias"],
+      a: 1,
+      exp: "NMOS 當 pass 要 gate 高於 Vout+Vgs，常需 charge pump。PMOS 較好做 LDO。"
+    },
+    {
+      q: "驅動 IC 裡 bandgap 後常接？",
+      options: ["直接打到 source 線", "緩衝後當 DAC / LDO / 偏置參考", "只接到 GOA", "接到 FPGA"],
+      a: 1,
+      exp: "參考電壓不能被 DAC 開關拉垮，要 buffer。"
+    }
+  ],
+  e04: [
+    {
+      q: "LCD source driver 輸出緩衝最在意的通常不是？",
+      options: ["通道間 offset", "驅動大電容的 slew", "Rail-to-rail 輸出擺幅", "GHz SerDes 眼圖"],
+      a: 3,
+      exp: "那是高速介面職缺。Source analog 是大量通道、匹配、推面板 RC。"
+    },
+    {
+      q: "Gamma DAC 常見做法？",
+      options: ["電阻串 + switch + buffer", "純 CPU 算完用 GPIO", "只用一個 inverter", "用 GOA 產生灰階"],
+      a: 0,
+      exp: "R-string 對應 gamma 曲線，再經 source amp 送到面板。"
+    },
+    {
+      q: "Dickson charge pump 電壓升不上去，優先查？",
+      options: ["時脈有沒有、開關 Vt 損失、電容比、負載電流", "只查 Laker 層名", "只查 C 語言", "只查 TOEIC"],
+      a: 0,
+      exp: "每一級掉 Vth 或用 CTS 改善。負載太重也會塌。"
+    },
+    {
+      q: "你們現在 AE 工作裡的 OSC config，對類比面試正確接法？",
+      options: ["說自己設計過 LC VCO tapeout", "講面板需要穩定時脈、trim、溫漂會造成 GOA timing 跑掉", "完全不要提", "說 OSC 是數位不會有類比"],
+      a: 1,
+      exp: "用系統後果證明你懂規格，不要謊稱做過矽上 oscillator 設計。"
+    },
+    {
+      q: "兩個鄰近 MOS 要匹配，錯誤的是？",
+      options: ["同方向", "common-centroid", "一個用最小 L、一個用很長 L", "加 dummy"],
+      a: 2,
+      exp: "同一匹配對要用同一 L、盡量同一 W 的 finger。"
+    },
+    {
+      q: "梯度（製程斜坡）造成的 mismatch，layout 用？",
+      options: ["common-centroid / interdigitated", "只把元件拉得極遠", "只用單一巨大 plate", "隨意 45 度擺"],
+      a: 0,
+      exp: "一階梯度可被共同重心抵消。"
+    },
+    {
+      q: "Source 線 RC 很大時，類比設計要提前想？",
+      options: ["輸出級電流、穩定、過衝是否傷到灰階", "只加 Verilog always block", "只改 FIAA 檔名", "把 VDD 接到 1 V"],
+      a: 0,
+      exp: "這就是你在 panel 側看過的 RC。面試把它講成負載模型。"
+    },
+    {
+      q: "這份課的目標職缺，不該把時間花在？",
+      options: ["OTA / LDO / bandgap", "source buffer 與 matching", "USB4 SerDes / 28 G PAM4", "charge pump 與 OSC"],
+      a: 2,
+      exp: "聯發科高速類比是另一條履歷。驅動 IC 類比不要偏題。"
+    }
+  ],
+  efinal: [
+    {
+      q: "請選兩級 OTA 單位增益頻率最接近的式子。",
+      options: ["gm1/Cc", "gm6/CL", "gm1 ro1", "Id/Vov"],
+      a: 0,
+      exp: "ωu ≈ gm1/Cc。口試默寫。"
+    },
+    {
+      q: "設計 LDO，你會先定哪三個？",
+      options: ["Vout、Imax、dropout（以及 PSRR 目標）", "只有 fin pitch", "只有 FIAA", "只有論文葡萄糖濃度"],
+      a: 0,
+      exp: "從規格倒回 pass size 與 error amp。"
+    },
+    {
+      q: "為什麼 source driver 要用 class-AB 而不是純 class-A？",
+      options: ["靜態電流省、又能拉／灌大電容", "AB 一定沒有 crossover", "AB 不需要匹配", "AB 自動 bandgap"],
+      a: 0,
+      exp: "通道數以百計，class-A 靜態功耗受不了。"
+    },
+    {
+      q: "講 PSRR 時正確層次？",
+      options: ["先定義 Vout/Vin@freq，再講 loop gain 與輸出電容", "說一句「我們有濾波」就結束", "PSRR 等於 CMRR", "PSRR 只存在數位"],
+      a: 0,
+      exp: "要有定義、頻段、機制。"
+    },
+    {
+      q: "Cascode 的代價？",
+      options: ["耗電壓餘裕（headroom）", "一定降低增益", "一定不能用在 LDO", "沒有極點"],
+      a: 0,
+      exp: "增益與 ro 變好，Vov 堆疊讓低電壓難做。"
+    },
+    {
+      q: "面試被問「你沒下過線」時，比較好的答法？",
+      options: ["承認沒有 CMOS tapeout，講 LTspice 作品與 panel/DDI 系統，問他們訓練怎麼帶", "堅持自己等於 5 年 analog designer", "只講生成式 AI", "沉默"],
+      a: 0,
+      exp: "謊稱 tapeout 一問細節就破。這條路吃的是可訓練性 + 顯示領域。"
+    },
+    {
+      q: "Bandgap curvature 是指？",
+      options: ["一階抵消後仍殘留的高階溫漂", "版圖圓角", "GOA 彎曲", "Laker 網格"],
+      a: 0,
+      exp: "進階題。知道有 curvature-compensation 即可。"
+    },
+    {
+      q: "Error amp 太慢的 LDO？",
+      options: ["load transient 差", "bandgap 變成 PTAT", "MOS 進不了飽和", "沒有 dropout"],
+      a: 0,
+      exp: "迴路跟不上負載階躍。"
+    },
+    {
+      q: "輸入對用 PMOS 的常見理由？",
+      options: ["處理靠近地的共模、flicker 有時較好", "PMOS 一定比較快", "PMOS 沒有 mismatch", "PMOS 不能做 OTA"],
+      a: 0,
+      exp: "NMOS 輸入利於高共模。看共模範圍選。"
+    },
+    {
+      q: "你在三星對 spec delta，對 analog 面試最有用的一句？",
+      options: ["GOA timing / power sequence / OSC 對錯會直接在 panel 上變成什麼波形問題", "我會寫 VBA", "我很會出差", "我用過 FPGA 所以等於 analog designer"],
+      a: 0,
+      exp: "把 AE 經驗落在「規格為何存在」，不是落在驗證流程。"
+    },
+    {
+      q: "Matching 統計：N 個並列 finger，隨機 mismatch 大約？",
+      options: ["σ 按 1/√N 下降", "σ 按 N 上升", "σ 不變", "σ 變成 0"],
+      a: 0,
+      exp: "Pelgrom：σ(ΔVth) ∝ 1/√(WL)，多 finger 等效面積增加。"
+    },
+    {
+      q: "最短路徑裡，電腦實作的最低完成線是？",
+      options: ["OTA、bandgap、LDO 各有一份自己能講的模擬圖", "把 Cadence 安裝畫面截圖", "只看影片不動手", "把 FIAA 工具再寫一次"],
+      a: 0,
+      exp: "面試帶三張圖比裝一堆 EDA 有用。沒有公司牌照就用 LTspice。"
+    }
+  ]
+};
+
+window.LESSON_QUIZ = {
+  m01: "e01",
+  m04: "e02",
+  m07: "e03",
+  m09: "e04",
+  m11: "efinal"
+};
+
+window.LESSONS = {"lessons/m00.html":"<div class=\"kicker\">第 00 課 · 手機</div>\n<h1>怎麼用、裝軟體、面試能講什麼</h1>\n<p class=\"lede\">這門課只服務一件事：讓你在聯詠、瑞鼎、奇景、矽創的 <b>驅動 IC 類比</b>面試上，畫得出 OTA / LDO / bandgap，講得出規格，並把 panel 經驗接上 CMOS。不準備 SerDes、PLL GHz、先進製程 IO。</p>\n\n<h2>你每天怎麼做</h2>\n<ol>\n  <li>有網頁就打開「今日」；沒有 Pages 就用 GitHub App 打開 <code>docs/read/README.md</code>，照第 N 天的連結讀。平日多半是一課手機閱讀。</li>\n  <li>讀完按「標記完成」。不要假裝讀過，後面接考試。</li>\n  <li>週末或有電腦的晚上做實驗。工具用 <b>LTspice</b>（免費）。沒有 Cadence 牌照不要硬裝。</li>\n  <li>考試低於 60% 就回對應課，不要趕進度。</li>\n  <li>換手機前到「進度」複製備份。</li>\n</ol>\n\n<div class=\"warn\">時間預期：56 天日曆，實際有效學習大約 80–100 小時。你有物理與 SPICE 底、又做過 panel analog，比從零開始的人短。仍然不可能在兩週內變成有 tapeout 的類比工程師。目標是「可訓練的驅動 IC 類比新人／轉職」，不是「五年 analog」。</div>\n\n<h2>面試能講、不能講</h2>\n<ul>\n  <li>能講：OLED / Micro-LED array 電路、GOA、pixel、補償、SPICE、實驗光罩、量產異常。</li>\n  <li>能講：客戶 panel spec 對 IC spec，GOA timing、power sequence、OSC、BC table 為何存在。</li>\n  <li>能講：這 8 週用 LTspice 自己做的 OTA、LDO、bandgap，圖給人看。</li>\n  <li><b>不能講</b>：CMOS 下過線、Virtuoso 量產經驗、自己設計過 DDI analog IP。沒有就是沒有。</li>\n</ul>\n<p>被問「沒有 analog tapeout 怎麼辦」時，用這句就夠：「矽上 CMOS analog 沒有量產經驗。玻璃上的 TFT analog 與 DDI 系統規格做過。CMOS 區塊這段用模擬補。我知道 source / gamma / 電源在面板上要達成什麼。」</p>\n\n<h2>今晚電腦（第 2 天會正式當實驗）</h2>\n<ol>\n  <li>Windows：到 Analog Devices 網站下載 LTspice，安裝。</li>\n  <li>開新 schematic，放一個 NMOS、一個電流源、一個 Vds 掃描，確認可以 Simulate。</li>\n  <li>建資料夾 <code>ddi-analog</code>，以後每個實驗一個檔。</li>\n</ol>\n<p>沒有 Windows 可用 ngspice。本課步驟以 LTspice 選單為準。</p>\n\n<h2>選讀書（有就看，沒有就靠本站）</h2>\n<ul>\n  <li>Razavi, <i>Design of Analog CMOS Integrated Circuits</i>：Ch.2–3 元件與單級，Ch.6 頻率響應，Ch.9 電流鏡，Ch.11 參考電壓。對到課次再翻，不要從頭讀整本。</li>\n  <li>Gray, Hurst, Lewis, Meyer：當字典，面試前不必讀完。</li>\n</ul>\n\n<div class=\"okbox\">功課：用一張紙寫下三個職缺名稱（例如瑞鼎 LCD Source Driver 類比、聯詠類比 IC、奇景 DDI analog）。之後每週對一次，看自己是否偏題去 SerDes。</div>\n","m00":"<div class=\"kicker\">第 00 課 · 手機</div>\n<h1>怎麼用、裝軟體、面試能講什麼</h1>\n<p class=\"lede\">這門課只服務一件事：讓你在聯詠、瑞鼎、奇景、矽創的 <b>驅動 IC 類比</b>面試上，畫得出 OTA / LDO / bandgap，講得出規格，並把 panel 經驗接上 CMOS。不準備 SerDes、PLL GHz、先進製程 IO。</p>\n\n<h2>你每天怎麼做</h2>\n<ol>\n  <li>有網頁就打開「今日」；沒有 Pages 就用 GitHub App 打開 <code>docs/read/README.md</code>，照第 N 天的連結讀。平日多半是一課手機閱讀。</li>\n  <li>讀完按「標記完成」。不要假裝讀過，後面接考試。</li>\n  <li>週末或有電腦的晚上做實驗。工具用 <b>LTspice</b>（免費）。沒有 Cadence 牌照不要硬裝。</li>\n  <li>考試低於 60% 就回對應課，不要趕進度。</li>\n  <li>換手機前到「進度」複製備份。</li>\n</ol>\n\n<div class=\"warn\">時間預期：56 天日曆，實際有效學習大約 80–100 小時。你有物理與 SPICE 底、又做過 panel analog，比從零開始的人短。仍然不可能在兩週內變成有 tapeout 的類比工程師。目標是「可訓練的驅動 IC 類比新人／轉職」，不是「五年 analog」。</div>\n\n<h2>面試能講、不能講</h2>\n<ul>\n  <li>能講：OLED / Micro-LED array 電路、GOA、pixel、補償、SPICE、實驗光罩、量產異常。</li>\n  <li>能講：客戶 panel spec 對 IC spec，GOA timing、power sequence、OSC、BC table 為何存在。</li>\n  <li>能講：這 8 週用 LTspice 自己做的 OTA、LDO、bandgap，圖給人看。</li>\n  <li><b>不能講</b>：CMOS 下過線、Virtuoso 量產經驗、自己設計過 DDI analog IP。沒有就是沒有。</li>\n</ul>\n<p>被問「沒有 analog tapeout 怎麼辦」時，用這句就夠：「矽上 CMOS analog 沒有量產經驗。玻璃上的 TFT analog 與 DDI 系統規格做過。CMOS 區塊這段用模擬補。我知道 source / gamma / 電源在面板上要達成什麼。」</p>\n\n<h2>今晚電腦（第 2 天會正式當實驗）</h2>\n<ol>\n  <li>Windows：到 Analog Devices 網站下載 LTspice，安裝。</li>\n  <li>開新 schematic，放一個 NMOS、一個電流源、一個 Vds 掃描，確認可以 Simulate。</li>\n  <li>建資料夾 <code>ddi-analog</code>，以後每個實驗一個檔。</li>\n</ol>\n<p>沒有 Windows 可用 ngspice。本課步驟以 LTspice 選單為準。</p>\n\n<h2>選讀書（有就看，沒有就靠本站）</h2>\n<ul>\n  <li>Razavi, <i>Design of Analog CMOS Integrated Circuits</i>：Ch.2–3 元件與單級，Ch.6 頻率響應，Ch.9 電流鏡，Ch.11 參考電壓。對到課次再翻，不要從頭讀整本。</li>\n  <li>Gray, Hurst, Lewis, Meyer：當字典，面試前不必讀完。</li>\n</ul>\n\n<div class=\"okbox\">功課：用一張紙寫下三個職缺名稱（例如瑞鼎 LCD Source Driver 類比、聯詠類比 IC、奇景 DDI analog）。之後每週對一次，看自己是否偏題去 SerDes。</div>\n","lessons/m01.html":"<div class=\"kicker\">第 01 課 · 手機</div>\n<h1>MOS 當類比元件</h1>\n<p class=\"lede\">數位把 MOS 當開關。類比把同一個 MOS 當電壓控制電流源。面試第一層：區段、平方律、gm、ro。</p>\n\n<h2>三個區段</h2>\n<table>\n  <tr><th>區段</th><th>條件（NMOS）</th><th>用途</th></tr>\n  <tr><td>截止</td><td>Vgs &lt; Vth</td><td>漏電、開關關</td></tr>\n  <tr><td>三極／線性</td><td>Vds &lt; Vov</td><td>電阻、pass、開關開</td></tr>\n  <tr><td>飽和</td><td>Vds ≥ Vov</td><td>電流源、放大器</td></tr>\n</table>\n<p>Vov = Vgs − Vth，叫 overdrive。類比偏置幾乎都在飽和。</p>\n\n<h2>平方律（強反轉飽和，長通道）</h2>\n<div class=\"formula\">Id = ½ μ Cox (W/L) Vov² · (1 + λ Vds)</div>\n<p>先進製程會偏離平方律。驅動 IC 類比面試仍從這個式子開始。能講「短通道會退化成接近線性」即可，不必推 BSIM 公式。</p>\n\n<h2>兩個小訊號參數</h2>\n<div class=\"formula\">gm = ∂Id/∂Vgs |Q = 2 Id / Vov = √[2 μ Cox (W/L) Id]</div>\n<div class=\"formula\">ro = 1 / (λ Id)</div>\n<p>增益來自 gm 乘上看到的電阻。要把增益做高：gm 大或 ro 大。Id 加大 gm 升、ro 降，所以不是電流愈大愈好。</p>\n<p>同一 Id，Vov 愈小 gm 愈大，W 必須變大。速度、面積、匹配要折衷。這句面試很加分。</p>\n\n<h2>gm/Id</h2>\n<p>強反轉：gm/Id = 2/Vov。弱反轉接近 1/(n VT)。設計時常用 gm/Id 選工作點，比死記 W/L 更接近實務。你先會強反轉即可。</p>\n\n<h2>體效應</h2>\n<p>Vs ≠ Vb 時 Vth 上升，gm 有效下降。源極跟隨器、cascode 的上管會碰到。講「body effect 讓跟隨器增益小於 1」就夠。</p>\n\n<h2>跟你背景的接法</h2>\n<p>TFT 也是飽和電流與 Vgs、Vth。面試不要把 LTPS 公式硬套 CMOS，但可以說：我習慣從元件 IV 回推電路，CMOS 只是 μ、Cox、Vth、λ 不同。</p>\n\n<div class=\"okbox\"><b>手機功課</b>（15 分）：假設 μCox=200 μA/V²、W/L=10、Vov=0.2 V、λ=0.05 V⁻¹。口算 Id、gm、ro（先忽略 λ 算 Id0，再算 gm=2Id/Vov）。寫在紙上，實驗課對模擬。</div>\n<div class=\"okbox\"><b>電腦</b>：做實驗 L01。沒做到也先把公式背熟。</div>\n","m01":"<div class=\"kicker\">第 01 課 · 手機</div>\n<h1>MOS 當類比元件</h1>\n<p class=\"lede\">數位把 MOS 當開關。類比把同一個 MOS 當電壓控制電流源。面試第一層：區段、平方律、gm、ro。</p>\n\n<h2>三個區段</h2>\n<table>\n  <tr><th>區段</th><th>條件（NMOS）</th><th>用途</th></tr>\n  <tr><td>截止</td><td>Vgs &lt; Vth</td><td>漏電、開關關</td></tr>\n  <tr><td>三極／線性</td><td>Vds &lt; Vov</td><td>電阻、pass、開關開</td></tr>\n  <tr><td>飽和</td><td>Vds ≥ Vov</td><td>電流源、放大器</td></tr>\n</table>\n<p>Vov = Vgs − Vth，叫 overdrive。類比偏置幾乎都在飽和。</p>\n\n<h2>平方律（強反轉飽和，長通道）</h2>\n<div class=\"formula\">Id = ½ μ Cox (W/L) Vov² · (1 + λ Vds)</div>\n<p>先進製程會偏離平方律。驅動 IC 類比面試仍從這個式子開始。能講「短通道會退化成接近線性」即可，不必推 BSIM 公式。</p>\n\n<h2>兩個小訊號參數</h2>\n<div class=\"formula\">gm = ∂Id/∂Vgs |Q = 2 Id / Vov = √[2 μ Cox (W/L) Id]</div>\n<div class=\"formula\">ro = 1 / (λ Id)</div>\n<p>增益來自 gm 乘上看到的電阻。要把增益做高：gm 大或 ro 大。Id 加大 gm 升、ro 降，所以不是電流愈大愈好。</p>\n<p>同一 Id，Vov 愈小 gm 愈大，W 必須變大。速度、面積、匹配要折衷。這句面試很加分。</p>\n\n<h2>gm/Id</h2>\n<p>強反轉：gm/Id = 2/Vov。弱反轉接近 1/(n VT)。設計時常用 gm/Id 選工作點，比死記 W/L 更接近實務。你先會強反轉即可。</p>\n\n<h2>體效應</h2>\n<p>Vs ≠ Vb 時 Vth 上升，gm 有效下降。源極跟隨器、cascode 的上管會碰到。講「body effect 讓跟隨器增益小於 1」就夠。</p>\n\n<h2>跟你背景的接法</h2>\n<p>TFT 也是飽和電流與 Vgs、Vth。面試不要把 LTPS 公式硬套 CMOS，但可以說：我習慣從元件 IV 回推電路，CMOS 只是 μ、Cox、Vth、λ 不同。</p>\n\n<div class=\"okbox\"><b>手機功課</b>（15 分）：假設 μCox=200 μA/V²、W/L=10、Vov=0.2 V、λ=0.05 V⁻¹。口算 Id、gm、ro（先忽略 λ 算 Id0，再算 gm=2Id/Vov）。寫在紙上，實驗課對模擬。</div>\n<div class=\"okbox\"><b>電腦</b>：做實驗 L01。沒做到也先把公式背熟。</div>\n","lessons/m02.html":"<div class=\"kicker\">第 02 課 · 手機</div>\n<h1>電流鏡、差動對、主動負載</h1>\n<p class=\"lede\">OTA 拆開就是這些積木。面試官常從「畫一個電流鏡」開始，看你會不會講誤差。</p>\n\n<h2>基本電流鏡</h2>\n<p>兩顆同型 MOS，閘極接在一起，參考邊 diode-connect（閘極接汲極）。理想電流比等於 (W/L) 比。</p>\n<p>實際會偏：</p>\n<ul>\n  <li><b>λ</b>：兩邊 Vds 不同，Id 就不同。輸出電壓一變，電流跟著變——這就是鏡的有限 ro。</li>\n  <li><b>mismatch</b>：ΔVth、Δβ。電流誤差對 Vth 很敏感，因為是平方律。</li>\n  <li><b>佈局</b>：同方向、interdigitated、dummy。</li>\n</ul>\n<p>要提高輸出電阻、減少 λ 誤差：cascode 鏡、Wilson 鏡。代價是 headroom（多一顆 Vov 或 Vgs）。低壓 DDI analog 不一定用得起高堆疊，要能講這個折衷。</p>\n\n<h2>差動對</h2>\n<p>兩顆匹配輸入管，源極接尾電流源 2I（或 I_tail）。差模時一邊電流增加、一邊減少，總和被尾電流釘住。</p>\n<ul>\n  <li>差模跨導：有效 gm 仍是單管 gm（視你怎麼定義輸出）。</li>\n  <li>尾電流源 ro 愈高，共模愈走不了，CMRR 愈好。</li>\n  <li>輸入對不匹配 → 輸入 offset。Source driver 通道間 offset 會變成畫面問題。</li>\n</ul>\n<p>大差模時一邊會關斷，輸出電流飽和在 I_tail。這限制 slew：輸出能給的最大電流就是偏流能提供的。</p>\n\n<h2>主動負載</h2>\n<p>差動對上面掛 PMOS 電流鏡，把差動電流轉成單端電壓，輸出電阻是 n、p 的 ro 並聯。這就是 5 管 OTA 的核心。</p>\n<div class=\"formula\">Av ≈ gm_n · (ro_n // ro_p)</div>\n\n<h2>偏置</h2>\n<p>整顆 analog IP 要有一條偏置：bandgap 或外部參考 → 產生 Ib → 複製到各區塊。面試畫 OTA 時，尾電流不要畫成理想電流源就停，講「來自 bias 鏡」。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：默畫 (1) NMOS 基本鏡 (2) 差動對 + 尾源 (3) 加上 PMOS 主動負載成為 5T OTA。每張標電流方向。</div>\n","m02":"<div class=\"kicker\">第 02 課 · 手機</div>\n<h1>電流鏡、差動對、主動負載</h1>\n<p class=\"lede\">OTA 拆開就是這些積木。面試官常從「畫一個電流鏡」開始，看你會不會講誤差。</p>\n\n<h2>基本電流鏡</h2>\n<p>兩顆同型 MOS，閘極接在一起，參考邊 diode-connect（閘極接汲極）。理想電流比等於 (W/L) 比。</p>\n<p>實際會偏：</p>\n<ul>\n  <li><b>λ</b>：兩邊 Vds 不同，Id 就不同。輸出電壓一變，電流跟著變——這就是鏡的有限 ro。</li>\n  <li><b>mismatch</b>：ΔVth、Δβ。電流誤差對 Vth 很敏感，因為是平方律。</li>\n  <li><b>佈局</b>：同方向、interdigitated、dummy。</li>\n</ul>\n<p>要提高輸出電阻、減少 λ 誤差：cascode 鏡、Wilson 鏡。代價是 headroom（多一顆 Vov 或 Vgs）。低壓 DDI analog 不一定用得起高堆疊，要能講這個折衷。</p>\n\n<h2>差動對</h2>\n<p>兩顆匹配輸入管，源極接尾電流源 2I（或 I_tail）。差模時一邊電流增加、一邊減少，總和被尾電流釘住。</p>\n<ul>\n  <li>差模跨導：有效 gm 仍是單管 gm（視你怎麼定義輸出）。</li>\n  <li>尾電流源 ro 愈高，共模愈走不了，CMRR 愈好。</li>\n  <li>輸入對不匹配 → 輸入 offset。Source driver 通道間 offset 會變成畫面問題。</li>\n</ul>\n<p>大差模時一邊會關斷，輸出電流飽和在 I_tail。這限制 slew：輸出能給的最大電流就是偏流能提供的。</p>\n\n<h2>主動負載</h2>\n<p>差動對上面掛 PMOS 電流鏡，把差動電流轉成單端電壓，輸出電阻是 n、p 的 ro 並聯。這就是 5 管 OTA 的核心。</p>\n<div class=\"formula\">Av ≈ gm_n · (ro_n // ro_p)</div>\n\n<h2>偏置</h2>\n<p>整顆 analog IP 要有一條偏置：bandgap 或外部參考 → 產生 Ib → 複製到各區塊。面試畫 OTA 時，尾電流不要畫成理想電流源就停，講「來自 bias 鏡」。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：默畫 (1) NMOS 基本鏡 (2) 差動對 + 尾源 (3) 加上 PMOS 主動負載成為 5T OTA。每張標電流方向。</div>\n","lessons/m03.html":"<div class=\"kicker\">第 03 課 · 手機</div>\n<h1>單級放大器與小訊號</h1>\n<p class=\"lede\">會把 MOS 換成 gm + ro 之後，增益只是電阻網路。這課把常見單級講完，下一課才上兩級。</p>\n\n<h2>共源極（CS）</h2>\n<p>輸入在閘極、輸出在汲極、源極交流接地。電壓增益約 −gm (rd // RL // ro)。主動負載時 RL 就是另一顆 MOS 的 ro。</p>\n<p>有源極退化電阻 Rs 時，有效 gm 下降、線性變好、輸出電阻變高。常用在要線性的地方，不常用在要高增益的第一級。</p>\n\n<h2>共閘極（CG）</h2>\n<p>低輸入阻抗 ≈ 1/gm，適合當電流緩衝。Cascode 的上管就是 CG：把下管的汲極固定，提高輸出電阻。</p>\n\n<h2>源極跟隨（CD）</h2>\n<p>增益略小於 1，低輸出阻抗 ≈ 1/gm。用來緩衝。Body effect 與有限 gm 讓增益到不了 1。Source driver 輸出級不是單純 follower，但是「低 Zout 去推電容」這個直覺相同。</p>\n\n<h2>Cascode</h2>\n<p>CS + CG 堆疊。輸出電阻大約 gm2 ro2 ro1 量級，增益高。電壓餘裕要兩段飽和。低壓製程難做 telescopic，會改 folded cascode。驅動 IC 中壓 analog 有時還做得出 telescopic，面試講得出 tradeoff 即可。</p>\n\n<h2>極點直覺</h2>\n<p>每個高阻節點對地看到 C，就有一個極點 ωp ≈ 1/(Rnode Cnode)。單級 OTA 輸出節點是主極點，GBW ≈ gm/(2π CL)。負載電容愈大愈慢。面板 source 線就是很大的 CL 加上電阻。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：用 gm、ro 寫出 5T OTA 的 Av。不要背答案，自己從輸出節點「往左往右看電阻」推一次。</div>\n","m03":"<div class=\"kicker\">第 03 課 · 手機</div>\n<h1>單級放大器與小訊號</h1>\n<p class=\"lede\">會把 MOS 換成 gm + ro 之後，增益只是電阻網路。這課把常見單級講完，下一課才上兩級。</p>\n\n<h2>共源極（CS）</h2>\n<p>輸入在閘極、輸出在汲極、源極交流接地。電壓增益約 −gm (rd // RL // ro)。主動負載時 RL 就是另一顆 MOS 的 ro。</p>\n<p>有源極退化電阻 Rs 時，有效 gm 下降、線性變好、輸出電阻變高。常用在要線性的地方，不常用在要高增益的第一級。</p>\n\n<h2>共閘極（CG）</h2>\n<p>低輸入阻抗 ≈ 1/gm，適合當電流緩衝。Cascode 的上管就是 CG：把下管的汲極固定，提高輸出電阻。</p>\n\n<h2>源極跟隨（CD）</h2>\n<p>增益略小於 1，低輸出阻抗 ≈ 1/gm。用來緩衝。Body effect 與有限 gm 讓增益到不了 1。Source driver 輸出級不是單純 follower，但是「低 Zout 去推電容」這個直覺相同。</p>\n\n<h2>Cascode</h2>\n<p>CS + CG 堆疊。輸出電阻大約 gm2 ro2 ro1 量級，增益高。電壓餘裕要兩段飽和。低壓製程難做 telescopic，會改 folded cascode。驅動 IC 中壓 analog 有時還做得出 telescopic，面試講得出 tradeoff 即可。</p>\n\n<h2>極點直覺</h2>\n<p>每個高阻節點對地看到 C，就有一個極點 ωp ≈ 1/(Rnode Cnode)。單級 OTA 輸出節點是主極點，GBW ≈ gm/(2π CL)。負載電容愈大愈慢。面板 source 線就是很大的 CL 加上電阻。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：用 gm、ro 寫出 5T OTA 的 Av。不要背答案，自己從輸出節點「往左往右看電阻」推一次。</div>\n","lessons/m04.html":"<div class=\"kicker\">第 04 課 · 核心</div>\n<h1>兩級 OTA 與頻率補償</h1>\n<p class=\"lede\">驅動 IC 類比面試最常要你畫的東西。這課讀到能默畫、能寫 GBW 與 SR、能講 RHP zero。</p>\n\n<h2>為什麼要兩級</h2>\n<p>單級 Av = gm ro，在現在製程 ro 不高，直流增益可能不夠（閉環跟隨器的直流誤差、LDO 的調節精度）。兩級把增益乘起來：</p>\n<div class=\"formula\">Av ≈ [gm1 (ro2 // ro4)] · [gm6 (ro6 // ro7)]</div>\n<p>第一級：差動對 + 主動負載。第二級：共源極。輸出從第二級汲極拿。</p>\n\n<h2>兩個高阻節點 → 兩個極點</h2>\n<p>不加補償時，兩極點可能靠太近，單位增益時相位已經掉很多，閉環振盪。Miller 補償把 Cc 接在第一級輸出與第二級輸出之間：</p>\n<ul>\n  <li>主極點被推到更低（pole splitting）。</li>\n  <li>GBW 被 Cc 釘住。</li>\n</ul>\n<div class=\"formula\">ωu ≈ gm1 / Cc　　fGBW ≈ gm1 / (2π Cc)</div>\n<div class=\"formula\">SR ≈ I_tail / Cc　（第一級對 Cc 充電受限時）</div>\n<p>要 GBW 高：加大 gm1 或減小 Cc。要 SR 高：加大第一級電流或減小 Cc。Cc 太小，PM 又不夠。這就是設計迴圈。</p>\n\n<h2>右半平面零點</h2>\n<p>Cc 有一條前饋路徑，出現 ωz = gm6 / Cc，在右半平面，讓相位更差。標準解法：</p>\n<ul>\n  <li>與 Cc 串 nulling resistor Rz ≈ 1/gm6，把 zero 移到左半，甚至拿去消輸出極點。</li>\n  <li>或用 cascode / 電流緩衝讓 Cc 只做回授、不做前饋。</li>\n</ul>\n<p>白板一定要畫 Rz。不畫會被當成只背過方塊圖。</p>\n\n<h2>相位邊限</h2>\n<p>在 |Avβ|=1 處，相位距離 −180° 還有多少。設計起點常取 60°。CL 變大，輸出極點下降，PM 變差。Source buffer 的 CL 隨面板解析度與走線變，補償不能只對一個 CL 成立。</p>\n\n<h3>白板 8 步（背這個）</h3>\n<ol>\n  <li>畫差動輸入、尾電流、PMOS 鏡、第二級 CS、Cc、Rz、CL。</li>\n  <li>標偏流 I1、I2。</li>\n  <li>寫 Av、fGBW、SR。</li>\n  <li>講主極點在哪、輸出極點在哪。</li>\n  <li>講 RHP zero 與 Rz。</li>\n  <li>講 CL 變大時怎麼辦（加輸出電流、class-AB、調 Cc）。</li>\n  <li>講 offset：輸入對匹配。</li>\n  <li>講 PSRR：電源從鏡與 tail 進來，要靠迴路與去耦。</li>\n</ol>\n\n<div class=\"warn\">電腦實驗 L04 必做。沒有自己掃過 Bode 圖，口試一問「你 Cc 怎麼定」會空。</div>\n<div class=\"okbox\"><b>手機功課</b>：不看筆記畫完整兩級 OTA。寫 fGBW 與 SR。用手機拍照存檔，明天對答案。</div>\n","m04":"<div class=\"kicker\">第 04 課 · 核心</div>\n<h1>兩級 OTA 與頻率補償</h1>\n<p class=\"lede\">驅動 IC 類比面試最常要你畫的東西。這課讀到能默畫、能寫 GBW 與 SR、能講 RHP zero。</p>\n\n<h2>為什麼要兩級</h2>\n<p>單級 Av = gm ro，在現在製程 ro 不高，直流增益可能不夠（閉環跟隨器的直流誤差、LDO 的調節精度）。兩級把增益乘起來：</p>\n<div class=\"formula\">Av ≈ [gm1 (ro2 // ro4)] · [gm6 (ro6 // ro7)]</div>\n<p>第一級：差動對 + 主動負載。第二級：共源極。輸出從第二級汲極拿。</p>\n\n<h2>兩個高阻節點 → 兩個極點</h2>\n<p>不加補償時，兩極點可能靠太近，單位增益時相位已經掉很多，閉環振盪。Miller 補償把 Cc 接在第一級輸出與第二級輸出之間：</p>\n<ul>\n  <li>主極點被推到更低（pole splitting）。</li>\n  <li>GBW 被 Cc 釘住。</li>\n</ul>\n<div class=\"formula\">ωu ≈ gm1 / Cc　　fGBW ≈ gm1 / (2π Cc)</div>\n<div class=\"formula\">SR ≈ I_tail / Cc　（第一級對 Cc 充電受限時）</div>\n<p>要 GBW 高：加大 gm1 或減小 Cc。要 SR 高：加大第一級電流或減小 Cc。Cc 太小，PM 又不夠。這就是設計迴圈。</p>\n\n<h2>右半平面零點</h2>\n<p>Cc 有一條前饋路徑，出現 ωz = gm6 / Cc，在右半平面，讓相位更差。標準解法：</p>\n<ul>\n  <li>與 Cc 串 nulling resistor Rz ≈ 1/gm6，把 zero 移到左半，甚至拿去消輸出極點。</li>\n  <li>或用 cascode / 電流緩衝讓 Cc 只做回授、不做前饋。</li>\n</ul>\n<p>白板一定要畫 Rz。不畫會被當成只背過方塊圖。</p>\n\n<h2>相位邊限</h2>\n<p>在 |Avβ|=1 處，相位距離 −180° 還有多少。設計起點常取 60°。CL 變大，輸出極點下降，PM 變差。Source buffer 的 CL 隨面板解析度與走線變，補償不能只對一個 CL 成立。</p>\n\n<h3>白板 8 步（背這個）</h3>\n<ol>\n  <li>畫差動輸入、尾電流、PMOS 鏡、第二級 CS、Cc、Rz、CL。</li>\n  <li>標偏流 I1、I2。</li>\n  <li>寫 Av、fGBW、SR。</li>\n  <li>講主極點在哪、輸出極點在哪。</li>\n  <li>講 RHP zero 與 Rz。</li>\n  <li>講 CL 變大時怎麼辦（加輸出電流、class-AB、調 Cc）。</li>\n  <li>講 offset：輸入對匹配。</li>\n  <li>講 PSRR：電源從鏡與 tail 進來，要靠迴路與去耦。</li>\n</ol>\n\n<div class=\"warn\">電腦實驗 L04 必做。沒有自己掃過 Bode 圖，口試一問「你 Cc 怎麼定」會空。</div>\n<div class=\"okbox\"><b>手機功課</b>：不看筆記畫完整兩級 OTA。寫 fGBW 與 SR。用手機拍照存檔，明天對答案。</div>\n","lessons/m05.html":"<div class=\"kicker\">第 05 課 · 手機</div>\n<h1>PSRR、CMRR、offset、slew</h1>\n<p class=\"lede\">電路畫得出之後，面試改問規格。每一項用「定義 → 機制 → 怎麼改」講。</p>\n\n<h2>Offset</h2>\n<p>輸入對 ΔVth、Δβ 造成 Vos。系統 offset 還包含有限增益與系統性不對稱。隨機 mismatch：σ ∝ 1/√(WL)。改善：加大輸入對面積、common-centroid、加電流（有時）、chopper（進階，source 通道不一定用）。</p>\n<p>Source driver：通道間 Vos 不一致會變成縱向或灰階偏差。這句把你的顯示背景接進來。</p>\n\n<h2>CMRR</h2>\n<p>差模增益 / 共模增益。靠尾電流源高 ro、輸入對匹配。共模範圍：輸入對與 tail 都要維持飽和。PMOS 輸入利於低共模，NMOS 輸入利於高共模。Rail-to-rail 輸入會切換兩對，要提 crossover。</p>\n\n<h2>PSRR</h2>\n<p>定義：電源變化有多少到輸出，通常講 dB，且<b>要講頻率</b>。直流 PSRR 往往靠 loop gain。高頻 loop 掉了，電源經由偏置鏡、Cc、bondwire 進來。改善：提高迴路頻寬、電源濾波、偏置電路自己的 PSRR、版圖隔離。</p>\n<p>LDO 的 PSRR 是獨立一題，第 07 課。OTA 當 buffer 時，PSRR 同樣存在。</p>\n\n<h2>Slew</h2>\n<p>大訊號時差動對一邊關斷，輸出電流被偏流限制。SR = I / C。Source 要在水平期間把像素電容充到目標電壓，SR 不夠會看到充電不足，灰階錯誤。你在 panel 側看過充電時間，這裡對應 analog 的 SR 與輸出電流。</p>\n\n<h2>Noise（知道層次即可）</h2>\n<p>熱噪聲 ∝ gm 或 1/gm 視位置；閃爍噪聲在 MOS 輸入對很常見，大面積、PMOS 輸入有時較好。Gamma 參考若吵，整條灰階會動。面試深問再畫輸入對等效噪聲，一般 DDI 職缺不會考到 RF LNA 那種。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：四張小卡（offset / CMRR / PSRR / SR），每張只寫定義一句、改善兩句。通勤背。</div>\n","m05":"<div class=\"kicker\">第 05 課 · 手機</div>\n<h1>PSRR、CMRR、offset、slew</h1>\n<p class=\"lede\">電路畫得出之後，面試改問規格。每一項用「定義 → 機制 → 怎麼改」講。</p>\n\n<h2>Offset</h2>\n<p>輸入對 ΔVth、Δβ 造成 Vos。系統 offset 還包含有限增益與系統性不對稱。隨機 mismatch：σ ∝ 1/√(WL)。改善：加大輸入對面積、common-centroid、加電流（有時）、chopper（進階，source 通道不一定用）。</p>\n<p>Source driver：通道間 Vos 不一致會變成縱向或灰階偏差。這句把你的顯示背景接進來。</p>\n\n<h2>CMRR</h2>\n<p>差模增益 / 共模增益。靠尾電流源高 ro、輸入對匹配。共模範圍：輸入對與 tail 都要維持飽和。PMOS 輸入利於低共模，NMOS 輸入利於高共模。Rail-to-rail 輸入會切換兩對，要提 crossover。</p>\n\n<h2>PSRR</h2>\n<p>定義：電源變化有多少到輸出，通常講 dB，且<b>要講頻率</b>。直流 PSRR 往往靠 loop gain。高頻 loop 掉了，電源經由偏置鏡、Cc、bondwire 進來。改善：提高迴路頻寬、電源濾波、偏置電路自己的 PSRR、版圖隔離。</p>\n<p>LDO 的 PSRR 是獨立一題，第 07 課。OTA 當 buffer 時，PSRR 同樣存在。</p>\n\n<h2>Slew</h2>\n<p>大訊號時差動對一邊關斷，輸出電流被偏流限制。SR = I / C。Source 要在水平期間把像素電容充到目標電壓，SR 不夠會看到充電不足，灰階錯誤。你在 panel 側看過充電時間，這裡對應 analog 的 SR 與輸出電流。</p>\n\n<h2>Noise（知道層次即可）</h2>\n<p>熱噪聲 ∝ gm 或 1/gm 視位置；閃爍噪聲在 MOS 輸入對很常見，大面積、PMOS 輸入有時較好。Gamma 參考若吵，整條灰階會動。面試深問再畫輸入對等效噪聲，一般 DDI 職缺不會考到 RF LNA 那種。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：四張小卡（offset / CMRR / PSRR / SR），每張只寫定義一句、改善兩句。通勤背。</div>\n","lessons/m06.html":"<div class=\"kicker\">第 06 課 · 手機</div>\n<h1>Bandgap</h1>\n<p class=\"lede\">DAC、LDO、偏置都要一個跟電源、溫度關係較小的基準。面試要能畫，並提到 startup。</p>\n\n<h2>核心相加</h2>\n<p>BJT（或寄生 PNP）的 VBE 隨溫度下降（CTAT）。兩顆不同電流密度的 VBE 差：</p>\n<div class=\"formula\">ΔVBE = VT ln(n)　　（n 為電流密度比或並聯顆數比）</div>\n<p>ΔVBE 是 PTAT。令 Vref = VBE + K · VT ln(n)，選 K 讓一階溫漂抵消，約 1.20–1.25 V。</p>\n<p>CMOS 製程常用基板 PNP，不是理想 BJT。面試承認「寄生 PNP、β 差、IR drop」即可。</p>\n\n<h2>電流模 bandgap</h2>\n<p>把 PTAT 電流與 CTAT 電流相加，再打到電阻上得 Vref，方便做出低於 1.2 V 的參考。知道有 voltage-mode 與 current-mode 兩種說法。</p>\n\n<h2>一定要講的實務</h2>\n<ul>\n  <li><b>Startup</b>：零電流是另一個平衡點。沒有 startup 可能全死。</li>\n  <li><b>OP 在迴路裡</b>：許多架構用 OTA 強迫兩點電壓相等。這顆 OP 的 offset 會直接進 Vref。</li>\n  <li><b>電阻匹配</b>：K 靠電阻比，要同類型電阻、注意溫度係數。</li>\n  <li><b>PSRR</b>：參考本身也怕電源。後級要 buffer，不能讓 DAC 開關回踢。</li>\n  <li><b>Trim</b>：量產會修電阻或電流比。講一句顯示你知道晶圓變異。</li>\n</ul>\n\n<h2>跟驅動 IC</h2>\n<p>Gamma 電壓、source 的滿刻度、LDO 的 Vref，常常同源。參考飄 1% 可能比單一 source amp offset 更致命，因為是系統性的。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：默畫 Kuijk / Brokaw 其中一種（本站實驗用簡化：兩顆 diode-connect 裝置 + 電阻 + OP）。標出 PTAT 與 VBE。另外畫一個 startup 小電路（例如注入一顆弱電流再切斷）。</div>\n","m06":"<div class=\"kicker\">第 06 課 · 手機</div>\n<h1>Bandgap</h1>\n<p class=\"lede\">DAC、LDO、偏置都要一個跟電源、溫度關係較小的基準。面試要能畫，並提到 startup。</p>\n\n<h2>核心相加</h2>\n<p>BJT（或寄生 PNP）的 VBE 隨溫度下降（CTAT）。兩顆不同電流密度的 VBE 差：</p>\n<div class=\"formula\">ΔVBE = VT ln(n)　　（n 為電流密度比或並聯顆數比）</div>\n<p>ΔVBE 是 PTAT。令 Vref = VBE + K · VT ln(n)，選 K 讓一階溫漂抵消，約 1.20–1.25 V。</p>\n<p>CMOS 製程常用基板 PNP，不是理想 BJT。面試承認「寄生 PNP、β 差、IR drop」即可。</p>\n\n<h2>電流模 bandgap</h2>\n<p>把 PTAT 電流與 CTAT 電流相加，再打到電阻上得 Vref，方便做出低於 1.2 V 的參考。知道有 voltage-mode 與 current-mode 兩種說法。</p>\n\n<h2>一定要講的實務</h2>\n<ul>\n  <li><b>Startup</b>：零電流是另一個平衡點。沒有 startup 可能全死。</li>\n  <li><b>OP 在迴路裡</b>：許多架構用 OTA 強迫兩點電壓相等。這顆 OP 的 offset 會直接進 Vref。</li>\n  <li><b>電阻匹配</b>：K 靠電阻比，要同類型電阻、注意溫度係數。</li>\n  <li><b>PSRR</b>：參考本身也怕電源。後級要 buffer，不能讓 DAC 開關回踢。</li>\n  <li><b>Trim</b>：量產會修電阻或電流比。講一句顯示你知道晶圓變異。</li>\n</ul>\n\n<h2>跟驅動 IC</h2>\n<p>Gamma 電壓、source 的滿刻度、LDO 的 Vref，常常同源。參考飄 1% 可能比單一 source amp offset 更致命，因為是系統性的。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：默畫 Kuijk / Brokaw 其中一種（本站實驗用簡化：兩顆 diode-connect 裝置 + 電阻 + OP）。標出 PTAT 與 VBE。另外畫一個 startup 小電路（例如注入一顆弱電流再切斷）。</div>\n","lessons/m07.html":"<div class=\"kicker\">第 07 課 · 手機</div>\n<h1>LDO</h1>\n<p class=\"lede\">瑞鼎、矽創類比面試很常問「LDO 怎麼設計」。用規格倒推，不要先畫一堆電晶體。</p>\n\n<h2>架構</h2>\n<p>Pass element（常見 PMOS）串在 Vin 與 Vout 之間。Error amp 比較 Vout 分壓與 Vref，驅動 pass 的閘極。回授：</p>\n<div class=\"formula\">Vout = Vref (1 + R1/R2)</div>\n<p>Loop 把 Vout 釘住。負載電流變，gate 電壓變，Rds 變。</p>\n\n<h2>從規格開始</h2>\n<ol>\n  <li>Vout、精度、最大 Iload。</li>\n  <li>Dropout：Vin,min − Vout。決定 pass 的 W 要多大（還要留溫度與製程）。</li>\n  <li>PSRR 目標（例如 1 kHz、100 kHz 各多少 dB）。</li>\n  <li>Load transient：ΔI、允許的 ΔV、恢復時間。</li>\n  <li>Iq（靜態電流）預算——驅動 IC 通道多，Iq 不能亂花。</li>\n</ol>\n\n<h2>穩定</h2>\n<p>LDO 的極點：error amp 輸出（高阻，pass 的閘極電容很大）、Vout 節點（Cout 與負載）。Cout 的 ESR 會引入零點，有時被拿來幫忙 PM，但不能依賴很散的 ESR。現在常設計成 cap-less 或 on-chip cap，補償策略不同。面試先講「兩個主極點要 pole splitting 或把 error amp 做快／做慢對上 Cout」。</p>\n\n<h2>PSRR</h2>\n<p>低頻：loop gain 壓制 Vin。高頻：Cout 與 parasitics。Vin 到 Vout 還有 pass 的 Cgd 前饋。要分段講，不要只說「有濾波」。</p>\n\n<h2>PMOS vs NMOS pass</h2>\n<p>PMOS：gate 可拉到地，容易 low dropout。NMOS：驅動強、面積省，但 gate 需要高於 Vout，常要 charge pump。DDI 內部兩種都可能出現，能比較即可。</p>\n\n<h3>白板 7 步</h3>\n<ol>\n  <li>寫規格：Vout、Imax、dropout、PSRR。</li>\n  <li>畫 Vref、error amp、PMOS pass、分壓、Cout。</li>\n  <li>估 pass W：Id ≈ ½ μCox W/L Vov² 或用三極區 Rds。</li>\n  <li>講 error amp 就是前面的 OTA，要注意能推大 Cgate。</li>\n  <li>講穩定與 Cout。</li>\n  <li>講 load transient。</li>\n  <li>講短路保護、軟啟動（有講加分）。</li>\n</ol>\n\n<div class=\"okbox\"><b>手機功課</b>：假設 3.3 V 出、Imax 50 mA、dropout 200 mV。用文字推：pass 大概要工作在哪一區、為什麼 error amp 輸出擺幅要夠大。</div>\n","m07":"<div class=\"kicker\">第 07 課 · 手機</div>\n<h1>LDO</h1>\n<p class=\"lede\">瑞鼎、矽創類比面試很常問「LDO 怎麼設計」。用規格倒推，不要先畫一堆電晶體。</p>\n\n<h2>架構</h2>\n<p>Pass element（常見 PMOS）串在 Vin 與 Vout 之間。Error amp 比較 Vout 分壓與 Vref，驅動 pass 的閘極。回授：</p>\n<div class=\"formula\">Vout = Vref (1 + R1/R2)</div>\n<p>Loop 把 Vout 釘住。負載電流變，gate 電壓變，Rds 變。</p>\n\n<h2>從規格開始</h2>\n<ol>\n  <li>Vout、精度、最大 Iload。</li>\n  <li>Dropout：Vin,min − Vout。決定 pass 的 W 要多大（還要留溫度與製程）。</li>\n  <li>PSRR 目標（例如 1 kHz、100 kHz 各多少 dB）。</li>\n  <li>Load transient：ΔI、允許的 ΔV、恢復時間。</li>\n  <li>Iq（靜態電流）預算——驅動 IC 通道多，Iq 不能亂花。</li>\n</ol>\n\n<h2>穩定</h2>\n<p>LDO 的極點：error amp 輸出（高阻，pass 的閘極電容很大）、Vout 節點（Cout 與負載）。Cout 的 ESR 會引入零點，有時被拿來幫忙 PM，但不能依賴很散的 ESR。現在常設計成 cap-less 或 on-chip cap，補償策略不同。面試先講「兩個主極點要 pole splitting 或把 error amp 做快／做慢對上 Cout」。</p>\n\n<h2>PSRR</h2>\n<p>低頻：loop gain 壓制 Vin。高頻：Cout 與 parasitics。Vin 到 Vout 還有 pass 的 Cgd 前饋。要分段講，不要只說「有濾波」。</p>\n\n<h2>PMOS vs NMOS pass</h2>\n<p>PMOS：gate 可拉到地，容易 low dropout。NMOS：驅動強、面積省，但 gate 需要高於 Vout，常要 charge pump。DDI 內部兩種都可能出現，能比較即可。</p>\n\n<h3>白板 7 步</h3>\n<ol>\n  <li>寫規格：Vout、Imax、dropout、PSRR。</li>\n  <li>畫 Vref、error amp、PMOS pass、分壓、Cout。</li>\n  <li>估 pass W：Id ≈ ½ μCox W/L Vov² 或用三極區 Rds。</li>\n  <li>講 error amp 就是前面的 OTA，要注意能推大 Cgate。</li>\n  <li>講穩定與 Cout。</li>\n  <li>講 load transient。</li>\n  <li>講短路保護、軟啟動（有講加分）。</li>\n</ol>\n\n<div class=\"okbox\"><b>手機功課</b>：假設 3.3 V 出、Imax 50 mA、dropout 200 mV。用文字推：pass 大概要工作在哪一區、為什麼 error amp 輸出擺幅要夠大。</div>\n","lessons/m08.html":"<div class=\"kicker\">第 08 課 · 手機</div>\n<h1>Charge pump 與 OSC</h1>\n<p class=\"lede\">驅動 IC 內部常要自己產生比電池高的 analog 電源，以及一個可修的時脈。你在 AE 做過 OSC config，這課補「裡面可能怎麼做」。</p>\n\n<h2>Charge pump</h2>\n<p>Dickson：時脈把飛電容輪流充電，串接把電壓疊上去。每一級理想加 Vclk，實際扣掉開關的 Vth 或導通壓、時脈非理想、負載電流。</p>\n<ul>\n  <li>負載愈重，輸出塌愈多。要夠大的 Cfly、夠高的 fclk，或夠多級。</li>\n  <li>開關常用 MOS；Vt 損失可用 CTS（charge transfer switch）改善。</li>\n  <li>漣波：後接 LDO 濾。這在晶片裡很常見：pump 出粗電壓，LDO 出乾淨 AVDD。</li>\n</ul>\n<p>面板 VGH/VGL 有時在 PMIC 或 TCON 側，不一定在 DDI 裡。不要把 panel 電源架構講死。講「DDI analog 可能有內部 boost + LDO」就夠。</p>\n\n<h2>OSC</h2>\n<p>常見 relaxation：對電容充放電，門檻比較器翻轉。頻率 f ≈ I/(C ΔV) 或 RC。Ring oscillator 也有，jitter 與溫漂較差。</p>\n<p>要修：trim C、R、I，或數位校正。溫度：RC 的 TCα 要對。電源：比較器 delay 隨 VDD 變。</p>\n<p>OSC 不穩，GOA timing、charge pump 時脈、內部狀態機全跑。你對客戶 spec 的 OSC 欄位，面試講成：「頻率誤差會讓 gate pulse 寬度與 analog sampling 對不齊。」這是你相對純類比新鮮人的優勢。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：寫 10 行，OSC 頻率偏 +5% 時，你見過或你預期 panel 會出什麼問題（GOA、充電時間、EMI 擇一講深）。</div>\n<div class=\"okbox\"><b>電腦</b>：L08 做 Dickson 三級或 RC OSC 擇一。有時間兩者都做。</div>\n","m08":"<div class=\"kicker\">第 08 課 · 手機</div>\n<h1>Charge pump 與 OSC</h1>\n<p class=\"lede\">驅動 IC 內部常要自己產生比電池高的 analog 電源，以及一個可修的時脈。你在 AE 做過 OSC config，這課補「裡面可能怎麼做」。</p>\n\n<h2>Charge pump</h2>\n<p>Dickson：時脈把飛電容輪流充電，串接把電壓疊上去。每一級理想加 Vclk，實際扣掉開關的 Vth 或導通壓、時脈非理想、負載電流。</p>\n<ul>\n  <li>負載愈重，輸出塌愈多。要夠大的 Cfly、夠高的 fclk，或夠多級。</li>\n  <li>開關常用 MOS；Vt 損失可用 CTS（charge transfer switch）改善。</li>\n  <li>漣波：後接 LDO 濾。這在晶片裡很常見：pump 出粗電壓，LDO 出乾淨 AVDD。</li>\n</ul>\n<p>面板 VGH/VGL 有時在 PMIC 或 TCON 側，不一定在 DDI 裡。不要把 panel 電源架構講死。講「DDI analog 可能有內部 boost + LDO」就夠。</p>\n\n<h2>OSC</h2>\n<p>常見 relaxation：對電容充放電，門檻比較器翻轉。頻率 f ≈ I/(C ΔV) 或 RC。Ring oscillator 也有，jitter 與溫漂較差。</p>\n<p>要修：trim C、R、I，或數位校正。溫度：RC 的 TCα 要對。電源：比較器 delay 隨 VDD 變。</p>\n<p>OSC 不穩，GOA timing、charge pump 時脈、內部狀態機全跑。你對客戶 spec 的 OSC 欄位，面試講成：「頻率誤差會讓 gate pulse 寬度與 analog sampling 對不齊。」這是你相對純類比新鮮人的優勢。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：寫 10 行，OSC 頻率偏 +5% 時，你見過或你預期 panel 會出什麼問題（GOA、充電時間、EMI 擇一講深）。</div>\n<div class=\"okbox\"><b>電腦</b>：L08 做 Dickson 三級或 RC OSC 擇一。有時間兩者都做。</div>\n","lessons/m09.html":"<div class=\"kicker\">第 09 課 · 手機</div>\n<h1>Source driver、gamma、面板負載</h1>\n<p class=\"lede\">這課把 CMOS analog 接到你真正懂的東西。面試後半常從這裡判斷你是不是「做過顯示的人」。</p>\n\n<h2>一條 source 通道在做什麼</h2>\n<ol>\n  <li>收到數位灰階。</li>\n  <li>Gamma DAC 把它變成目標電壓（非線性，配合液晶穿透率）。</li>\n  <li>輸出緩衝把該電壓驅動到 source 線。</li>\n  <li>Source 線是 RC 梯形，末端還有像素電容，GOA 打開時寫入 pixel。</li>\n</ol>\n<p>類比設計的戰場：DAC 線性與匹配、buffer 的 offset / slew / 穩定、通道間一致性、功耗（通道數以百到千）。</p>\n\n<h2>Gamma</h2>\n<p>電阻串分壓，tap 接到傳輸閘，再進 buffer。電阻相對值決定曲線。參考來自 bandgap（經 buffer）。開關電荷注入會踢參考，所以參考要低阻抗。</p>\n\n<h2>輸出緩衝</h2>\n<p>常是 rail-to-rail class-AB，靜態電流小、瞬態能拉能灌。負載不是理想電容，是 Rsource、Cline、pixel。過衝會讓灰階閃或 crosstalk。補償必須覆蓋負載範圍。</p>\n<p>極性反轉（column inversion 等）讓輸出常常要跨大電壓步階，SR 與短路電流限制被反覆考。</p>\n\n<h2>你的經歷怎麼講（90 秒）</h2>\n<p>「在友達做 GOA 與 pixel 電路，清楚 gate 打開時間內 source 必須把像素充到多少。RC 與均勻性做過圓形 panel 補償。在三星對客戶 spec：GOA timing、power sequence、OSC、BC table。這些決定 source analog 的建立時間與電源潔淨度。CMOS 區塊我用模擬補 OTA／LDO／bandgap。」</p>\n<p>不要把 90 秒講成 FIAA、FPGA、VBA。那些當被問自動化再提。</p>\n\n<h2>數字直覺（面試用數量級，不要裝精確）</h2>\n<ul>\n  <li>Source 線：幾十到幾百 pF 量級，視尺寸與製程。</li>\n  <li>水平時間：幾十 μs 量級（視更新率與解析度）。建立要在這段內完成。</li>\n  <li>通道 offset：mV 級就可能被看到。</li>\n</ul>\n<p>具體產品數字以你做過的機種為準；沒把握就講「量級」與「從 timing budget 反推 SR」。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：把上面 90 秒錄成語音，聽一次。刪掉所有驗證流程字。再錄一次。</div>\n","m09":"<div class=\"kicker\">第 09 課 · 手機</div>\n<h1>Source driver、gamma、面板負載</h1>\n<p class=\"lede\">這課把 CMOS analog 接到你真正懂的東西。面試後半常從這裡判斷你是不是「做過顯示的人」。</p>\n\n<h2>一條 source 通道在做什麼</h2>\n<ol>\n  <li>收到數位灰階。</li>\n  <li>Gamma DAC 把它變成目標電壓（非線性，配合液晶穿透率）。</li>\n  <li>輸出緩衝把該電壓驅動到 source 線。</li>\n  <li>Source 線是 RC 梯形，末端還有像素電容，GOA 打開時寫入 pixel。</li>\n</ol>\n<p>類比設計的戰場：DAC 線性與匹配、buffer 的 offset / slew / 穩定、通道間一致性、功耗（通道數以百到千）。</p>\n\n<h2>Gamma</h2>\n<p>電阻串分壓，tap 接到傳輸閘，再進 buffer。電阻相對值決定曲線。參考來自 bandgap（經 buffer）。開關電荷注入會踢參考，所以參考要低阻抗。</p>\n\n<h2>輸出緩衝</h2>\n<p>常是 rail-to-rail class-AB，靜態電流小、瞬態能拉能灌。負載不是理想電容，是 Rsource、Cline、pixel。過衝會讓灰階閃或 crosstalk。補償必須覆蓋負載範圍。</p>\n<p>極性反轉（column inversion 等）讓輸出常常要跨大電壓步階，SR 與短路電流限制被反覆考。</p>\n\n<h2>你的經歷怎麼講（90 秒）</h2>\n<p>「在友達做 GOA 與 pixel 電路，清楚 gate 打開時間內 source 必須把像素充到多少。RC 與均勻性做過圓形 panel 補償。在三星對客戶 spec：GOA timing、power sequence、OSC、BC table。這些決定 source analog 的建立時間與電源潔淨度。CMOS 區塊我用模擬補 OTA／LDO／bandgap。」</p>\n<p>不要把 90 秒講成 FIAA、FPGA、VBA。那些當被問自動化再提。</p>\n\n<h2>數字直覺（面試用數量級，不要裝精確）</h2>\n<ul>\n  <li>Source 線：幾十到幾百 pF 量級，視尺寸與製程。</li>\n  <li>水平時間：幾十 μs 量級（視更新率與解析度）。建立要在這段內完成。</li>\n  <li>通道 offset：mV 級就可能被看到。</li>\n</ul>\n<p>具體產品數字以你做過的機種為準；沒把握就講「量級」與「從 timing budget 反推 SR」。</p>\n\n<div class=\"okbox\"><b>手機功課</b>：把上面 90 秒錄成語音，聽一次。刪掉所有驗證流程字。再錄一次。</div>\n","lessons/m10.html":"<div class=\"kicker\">第 10 課 · 手機</div>\n<h1>Layout 與 mismatch</h1>\n<p class=\"lede\">沒有 Virtuoso 經驗也可以考這一題，因為考的是原則。你用過 Laker 做 panel layout，講「匹配、 dummy、方向」是通的，但不要說自己會 FinFET analog layout。</p>\n\n<h2>Pelgrom</h2>\n<div class=\"formula\">σ(ΔVth) ≈ A_VT / √(W L)</div>\n<p>面積愈大，隨機失配愈小。電流鏡、輸入對、bandgap 的核心對，都要面積。</p>\n\n<h2>系統性失配</h2>\n<ul>\n  <li>方向：電流方向、多晶矽方向一致。</li>\n  <li>梯度：common-centroid、交指。</li>\n  <li>邊緣：dummy finger，讓蝕刻環境相同。</li>\n  <li>應力、金屬覆蓋不對稱：盡量對稱。</li>\n  <li>大電流走線：IR drop 會造成看似 mismatch 的電流誤差。Kelvin 接到實際閘／源。</li>\n</ul>\n\n<h2>類比版圖還要講</h2>\n<ul>\n  <li>敏感節點遠離時脈與 pump。</li>\n  <li>去耦放在 bias 與 LDO 旁邊。</li>\n  <li>Guard ring、襯底接觸，減少 latch-up 與噪聲耦合。</li>\n  <li>高壓 device（若 DDI 有）與低壓邏輯的間距、規則。</li>\n</ul>\n\n<p>Panel Laker layout 的經驗可以一句話：「我做過必須對對稱與 RC 負責的 layout；CMOS analog 的匹配規則我按 Pelgrom 與 common-centroid 學，工具可以學。」</p>\n\n<div class=\"okbox\"><b>手機功課</b>：在紙上畫兩顆要匹配的 MOS：四 finger、common-centroid、兩側 dummy。標電流方向相同。</div>\n","m10":"<div class=\"kicker\">第 10 課 · 手機</div>\n<h1>Layout 與 mismatch</h1>\n<p class=\"lede\">沒有 Virtuoso 經驗也可以考這一題，因為考的是原則。你用過 Laker 做 panel layout，講「匹配、 dummy、方向」是通的，但不要說自己會 FinFET analog layout。</p>\n\n<h2>Pelgrom</h2>\n<div class=\"formula\">σ(ΔVth) ≈ A_VT / √(W L)</div>\n<p>面積愈大，隨機失配愈小。電流鏡、輸入對、bandgap 的核心對，都要面積。</p>\n\n<h2>系統性失配</h2>\n<ul>\n  <li>方向：電流方向、多晶矽方向一致。</li>\n  <li>梯度：common-centroid、交指。</li>\n  <li>邊緣：dummy finger，讓蝕刻環境相同。</li>\n  <li>應力、金屬覆蓋不對稱：盡量對稱。</li>\n  <li>大電流走線：IR drop 會造成看似 mismatch 的電流誤差。Kelvin 接到實際閘／源。</li>\n</ul>\n\n<h2>類比版圖還要講</h2>\n<ul>\n  <li>敏感節點遠離時脈與 pump。</li>\n  <li>去耦放在 bias 與 LDO 旁邊。</li>\n  <li>Guard ring、襯底接觸，減少 latch-up 與噪聲耦合。</li>\n  <li>高壓 device（若 DDI 有）與低壓邏輯的間距、規則。</li>\n</ul>\n\n<p>Panel Laker layout 的經驗可以一句話：「我做過必須對對稱與 RC 負責的 layout；CMOS analog 的匹配規則我按 Pelgrom 與 common-centroid 學，工具可以學。」</p>\n\n<div class=\"okbox\"><b>手機功課</b>：在紙上畫兩顆要匹配的 MOS：四 finger、common-centroid、兩側 dummy。標電流方向相同。</div>\n","lessons/m11.html":"<div class=\"kicker\">第 11 課 · 手機</div>\n<h1>面試題庫與白板順序</h1>\n<p class=\"lede\">下面按出場順序排。對鏡子講，不要默讀。</p>\n\n<h2>開場 60 秒</h2>\n<p>姓名、光電碩士、友達 array 電路三年弱、三星 DDI AE。接著一句話落地：「我要應徵的是驅動 IC 類比，CMOS 區塊用模擬補齊，顯示規格是我已經在產品上處理過的。」停。等對方問。</p>\n\n<h2>技術題（幾乎必遇，每題 8–15 分）</h2>\n<ol>\n  <li>畫電流鏡，講誤差。</li>\n  <li>畫 5T OTA，寫 Av。</li>\n  <li>畫兩級 OTA，寫 GBW、SR，畫 Cc 與 Rz。</li>\n  <li>CL 變 10 倍怎麼辦。</li>\n  <li>LDO 怎麼設計（規格 → pass → error amp → 穩定 → transient）。</li>\n  <li>Bandgap 原理 + startup。</li>\n  <li>PSRR 定義與頻段。</li>\n  <li>Offset 從哪來、layout 怎麼做。</li>\n  <li>Source buffer 為什麼 class-AB。</li>\n  <li>Charge pump 升壓上不去查什麼。</li>\n</ol>\n\n<h2>對方拿你履歷打</h2>\n<ul>\n  <li>FPGA／FIAA：答「那是現職工具。類比面試我以區塊設計為主。」立刻轉回 OTA。</li>\n  <li>沒有 tapeout：用第 00 課那句，不要道歉太長。</li>\n  <li>碩論葡萄糖：一句帶過，回到 TFT／顯示課程與工作。</li>\n  <li>專利：7T2C 與 RC 補償各 30 秒，強調電路與均勻性，不要念專利範圍。</li>\n</ul>\n\n<h2>你要問對方的問題（顯得你在選驅動 analog）</h2>\n<ul>\n  <li>這缺是 source / gamma / power analog 哪一塊？</li>\n  <li>新進會不會先 maintain 既有 IP 再做新區塊？</li>\n  <li>製程與電壓大概？（中壓 device 還是純低壓）</li>\n  <li>有沒有內部訓練畫 layout 的流程？</li>\n</ul>\n\n<h2>投履歷時的職缺過濾</h2>\n<p>投：類比 IC、LCD／OLED driver analog、OP／bandgap／LDO／charge pump。不投：職稱寫無誠勿試的 SerDes、USB4、PCIe、高速 ADC。那些不是這門課的範圍。</p>\n\n<div class=\"okbox\"><b>功課</b>：十題白板，每題計時 12 分鐘。超時的題目標成弱項，明天只練弱項。然後做總考。</div>\n","m11":"<div class=\"kicker\">第 11 課 · 手機</div>\n<h1>面試題庫與白板順序</h1>\n<p class=\"lede\">下面按出場順序排。對鏡子講，不要默讀。</p>\n\n<h2>開場 60 秒</h2>\n<p>姓名、光電碩士、友達 array 電路三年弱、三星 DDI AE。接著一句話落地：「我要應徵的是驅動 IC 類比，CMOS 區塊用模擬補齊，顯示規格是我已經在產品上處理過的。」停。等對方問。</p>\n\n<h2>技術題（幾乎必遇，每題 8–15 分）</h2>\n<ol>\n  <li>畫電流鏡，講誤差。</li>\n  <li>畫 5T OTA，寫 Av。</li>\n  <li>畫兩級 OTA，寫 GBW、SR，畫 Cc 與 Rz。</li>\n  <li>CL 變 10 倍怎麼辦。</li>\n  <li>LDO 怎麼設計（規格 → pass → error amp → 穩定 → transient）。</li>\n  <li>Bandgap 原理 + startup。</li>\n  <li>PSRR 定義與頻段。</li>\n  <li>Offset 從哪來、layout 怎麼做。</li>\n  <li>Source buffer 為什麼 class-AB。</li>\n  <li>Charge pump 升壓上不去查什麼。</li>\n</ol>\n\n<h2>對方拿你履歷打</h2>\n<ul>\n  <li>FPGA／FIAA：答「那是現職工具。類比面試我以區塊設計為主。」立刻轉回 OTA。</li>\n  <li>沒有 tapeout：用第 00 課那句，不要道歉太長。</li>\n  <li>碩論葡萄糖：一句帶過，回到 TFT／顯示課程與工作。</li>\n  <li>專利：7T2C 與 RC 補償各 30 秒，強調電路與均勻性，不要念專利範圍。</li>\n</ul>\n\n<h2>你要問對方的問題（顯得你在選驅動 analog）</h2>\n<ul>\n  <li>這缺是 source / gamma / power analog 哪一塊？</li>\n  <li>新進會不會先 maintain 既有 IP 再做新區塊？</li>\n  <li>製程與電壓大概？（中壓 device 還是純低壓）</li>\n  <li>有沒有內部訓練畫 layout 的流程？</li>\n</ul>\n\n<h2>投履歷時的職缺過濾</h2>\n<p>投：類比 IC、LCD／OLED driver analog、OP／bandgap／LDO／charge pump。不投：職稱寫無誠勿試的 SerDes、USB4、PCIe、高速 ADC。那些不是這門課的範圍。</p>\n\n<div class=\"okbox\"><b>功課</b>：十題白板，每題計時 12 分鐘。超時的題目標成弱項，明天只練弱項。然後做總考。</div>\n","labs/l00.html":"<div class=\"kicker\">實驗 L00 · 電腦</div>\n<h1>安裝 LTspice，跑通 NMOS</h1>\n<ol>\n  <li>搜尋 Analog Devices LTspice，下載安裝。</li>\n  <li>File → New Schematic。</li>\n  <li>放電壓源 V1：0 到 3.3 先當 Vds。再放 V2 當 Vgs，先設 1.0 V。</li>\n  <li>放 NMOS。若預設是功率 MOS，改用內建 CMOS：很多版本可放 <code>nmos4</code> 並用 .model。最省事：用元件庫裡的 <code>NMOS</code>，在 Spice directive 加：</li>\n</ol>\n<div class=\"formula\">.model nch nmos (Vto=0.5 Kp=200u Lambda=0.05)</div>\n<p>Kp 這裡對應 μCox。四端 MOS 的 bulk 接到源極。</p>\n<ol start=\"5\">\n  <li>Simulate → Edit Simulation Command → DC sweep：Vds 0–3.3，步 0.01。Vgs 用列表 0.7 0.9 1.1 1.3。</li>\n  <li>跑模擬，點 NMOS 汲極電流，應看到一簇飽和曲線。</li>\n  <li>存成 <code>00_nmos.asc</code>。</li>\n</ol>\n<div class=\"okbox\">完成線：你有一張 IV 族曲線圖。截圖放到面試資料夾，檔名 <code>00_iv.png</code>。</div>\n<p>若模型完全不會動：先用 LTspice 自帶的 e.g. <code>2N7002</code> 證明軟體沒壞，再回頭設 CMOS .model。</p>\n","l00":"<div class=\"kicker\">實驗 L00 · 電腦</div>\n<h1>安裝 LTspice，跑通 NMOS</h1>\n<ol>\n  <li>搜尋 Analog Devices LTspice，下載安裝。</li>\n  <li>File → New Schematic。</li>\n  <li>放電壓源 V1：0 到 3.3 先當 Vds。再放 V2 當 Vgs，先設 1.0 V。</li>\n  <li>放 NMOS。若預設是功率 MOS，改用內建 CMOS：很多版本可放 <code>nmos4</code> 並用 .model。最省事：用元件庫裡的 <code>NMOS</code>，在 Spice directive 加：</li>\n</ol>\n<div class=\"formula\">.model nch nmos (Vto=0.5 Kp=200u Lambda=0.05)</div>\n<p>Kp 這裡對應 μCox。四端 MOS 的 bulk 接到源極。</p>\n<ol start=\"5\">\n  <li>Simulate → Edit Simulation Command → DC sweep：Vds 0–3.3，步 0.01。Vgs 用列表 0.7 0.9 1.1 1.3。</li>\n  <li>跑模擬，點 NMOS 汲極電流，應看到一簇飽和曲線。</li>\n  <li>存成 <code>00_nmos.asc</code>。</li>\n</ol>\n<div class=\"okbox\">完成線：你有一張 IV 族曲線圖。截圖放到面試資料夾，檔名 <code>00_iv.png</code>。</div>\n<p>若模型完全不會動：先用 LTspice 自帶的 e.g. <code>2N7002</code> 證明軟體沒壞，再回頭設 CMOS .model。</p>\n","labs/l01.html":"<div class=\"kicker\">實驗 L01 · 電腦</div>\n<h1>從 IV 讀 gm 與 ro</h1>\n<ol>\n  <li>沿用 L00 電路。固定 Vds=1.5 V（飽和），對 Vgs 做 DC sweep 0.5–1.5 V。</li>\n  <li>畫 Id–Vgs。在 Vgs=1.0 V 附近用游標讀 Id。</li>\n  <li>gm 數值微分：ΔId/ΔVgs，Δ 取 20 mV。</li>\n  <li>跟公式 gm=2 Id/(Vgs−Vto) 比，差多少寫在圖旁。</li>\n  <li>固定 Vgs=1.0，sweep Vds 1.0–3.0。在飽和區讀斜率 dId/dVds，ro=1/斜率。</li>\n  <li>跟 1/(λ Id) 比。</li>\n</ol>\n<p>兩者對不上時先查：是否還在線性區、Vto 是否真的是 0.5、Lambda 單位。</p>\n<div class=\"okbox\">完成線：一張表，手算 vs 模擬，gm、ro 各一列。誤差小於 30% 可接受（模型與平方律本來就粗）。</div>\n","l01":"<div class=\"kicker\">實驗 L01 · 電腦</div>\n<h1>從 IV 讀 gm 與 ro</h1>\n<ol>\n  <li>沿用 L00 電路。固定 Vds=1.5 V（飽和），對 Vgs 做 DC sweep 0.5–1.5 V。</li>\n  <li>畫 Id–Vgs。在 Vgs=1.0 V 附近用游標讀 Id。</li>\n  <li>gm 數值微分：ΔId/ΔVgs，Δ 取 20 mV。</li>\n  <li>跟公式 gm=2 Id/(Vgs−Vto) 比，差多少寫在圖旁。</li>\n  <li>固定 Vgs=1.0，sweep Vds 1.0–3.0。在飽和區讀斜率 dId/dVds，ro=1/斜率。</li>\n  <li>跟 1/(λ Id) 比。</li>\n</ol>\n<p>兩者對不上時先查：是否還在線性區、Vto 是否真的是 0.5、Lambda 單位。</p>\n<div class=\"okbox\">完成線：一張表，手算 vs 模擬，gm、ro 各一列。誤差小於 30% 可接受（模型與平方律本來就粗）。</div>\n","labs/l02.html":"<div class=\"kicker\">實驗 L02 · 電腦</div>\n<h1>電流鏡與 5T OTA</h1>\n<h2>A. 電流鏡</h2>\n<ol>\n  <li>兩顆相同 NMOS，參考邊 diode-connect，Iref=20 μA。</li>\n  <li>輸出邊汲極接電壓源，sweep 0.3–3 V，畫 Iout。</li>\n  <li>觀察 Iout 隨 Vds 掉多少——這就是 λ。</li>\n  <li>把輸出管 L 加倍、W 加倍（保持 W/L），看 ro 是否變好。</li>\n</ol>\n<h2>B. 5T OTA</h2>\n<ol>\n  <li>NMOS 差動對、尾電流 20 μA、PMOS 主動負載，VDD=3.3 V。</li>\n  <li>共模 1.65 V。一端 AC 1，做 AC 分析。</li>\n  <li>記錄低頻增益 dB 與單位增益頻率（對 1 pF 負載）。</li>\n  <li>把 CL 改 1 pF → 20 pF，看 fGBW 怎麼掉。</li>\n</ol>\n<div class=\"okbox\">完成線：鏡的 Iout–Vds 圖 + 5T Bode 圖各一。能口頭說「增益大概 gm×(ro//ro)」。 </div>\n","l02":"<div class=\"kicker\">實驗 L02 · 電腦</div>\n<h1>電流鏡與 5T OTA</h1>\n<h2>A. 電流鏡</h2>\n<ol>\n  <li>兩顆相同 NMOS，參考邊 diode-connect，Iref=20 μA。</li>\n  <li>輸出邊汲極接電壓源，sweep 0.3–3 V，畫 Iout。</li>\n  <li>觀察 Iout 隨 Vds 掉多少——這就是 λ。</li>\n  <li>把輸出管 L 加倍、W 加倍（保持 W/L），看 ro 是否變好。</li>\n</ol>\n<h2>B. 5T OTA</h2>\n<ol>\n  <li>NMOS 差動對、尾電流 20 μA、PMOS 主動負載，VDD=3.3 V。</li>\n  <li>共模 1.65 V。一端 AC 1，做 AC 分析。</li>\n  <li>記錄低頻增益 dB 與單位增益頻率（對 1 pF 負載）。</li>\n  <li>把 CL 改 1 pF → 20 pF，看 fGBW 怎麼掉。</li>\n</ol>\n<div class=\"okbox\">完成線：鏡的 Iout–Vds 圖 + 5T Bode 圖各一。能口頭說「增益大概 gm×(ro//ro)」。 </div>\n","labs/l04.html":"<div class=\"kicker\">實驗 L04 · 電腦 · 必做</div>\n<h1>兩級 OTA：增益、GBW、PM</h1>\n<ol>\n  <li>在 5T 後面加第二級 NMOS CS，主動負載 PMOS 電流源。第二級電流先設第一級的 3–5 倍。</li>\n  <li>不加 Cc，AC 分析，看相位在 0 dB 時剩多少。多半很差。</li>\n  <li>加 Cc 0.2 pF–2 pF 之間掃。記錄 fGBW 與 PM。</li>\n  <li>加 Rz（從 1 k 掃到 50 k）。看 RHP 相關的相位凹陷有沒有改善。</li>\n  <li>CL=2 pF 與 20 pF 各做一次。寫下：哪個 Cc、Rz 在兩個負載都能 PM&gt;45°。</li>\n  <li>Transient：輸入 100 mV 方波，看過衝與建立。再給 500 mV，看 slew 直線段，估 SR。</li>\n</ol>\n<p>對公式：fGBW 是否接近 gm1/(2π Cc)。gm1 用 L01 的方法在差動對上讀。</p>\n<div class=\"warn\">這份圖面試要帶。檔名 <code>04_ota_bode.png</code>、<code>04_ota_slew.png</code>。</div>\n<div class=\"okbox\">完成線：你能指出 Bode 上的 0 dB 點、PM、以及 Cc 加倍時 GBW 大約腰斬。</div>\n","l04":"<div class=\"kicker\">實驗 L04 · 電腦 · 必做</div>\n<h1>兩級 OTA：增益、GBW、PM</h1>\n<ol>\n  <li>在 5T 後面加第二級 NMOS CS，主動負載 PMOS 電流源。第二級電流先設第一級的 3–5 倍。</li>\n  <li>不加 Cc，AC 分析，看相位在 0 dB 時剩多少。多半很差。</li>\n  <li>加 Cc 0.2 pF–2 pF 之間掃。記錄 fGBW 與 PM。</li>\n  <li>加 Rz（從 1 k 掃到 50 k）。看 RHP 相關的相位凹陷有沒有改善。</li>\n  <li>CL=2 pF 與 20 pF 各做一次。寫下：哪個 Cc、Rz 在兩個負載都能 PM&gt;45°。</li>\n  <li>Transient：輸入 100 mV 方波，看過衝與建立。再給 500 mV，看 slew 直線段，估 SR。</li>\n</ol>\n<p>對公式：fGBW 是否接近 gm1/(2π Cc)。gm1 用 L01 的方法在差動對上讀。</p>\n<div class=\"warn\">這份圖面試要帶。檔名 <code>04_ota_bode.png</code>、<code>04_ota_slew.png</code>。</div>\n<div class=\"okbox\">完成線：你能指出 Bode 上的 0 dB 點、PM、以及 Cc 加倍時 GBW 大約腰斬。</div>\n","labs/l06.html":"<div class=\"kicker\">實驗 L06 · 電腦</div>\n<h1>簡化 bandgap</h1>\n<p>LTspice 用 BJT 比硬做 CMOS 寄生 PNP 乾淨。目標是「溫度曲線有一個相對平的區」，不是 1.250000 V。</p>\n<ol>\n  <li>用兩顆 NPN（或 PNP），面積比 1:8 或電流比 1:8。</li>\n  <li>用 OP amp（可用通用 opamp 符號先跑通，再換成你自己的兩級 OTA 加分）。</li>\n  <li>電阻比先用手算 K ≈ (VBE 溫漂) / (VT ln n 溫漂) 的量級，再掃。</li>\n  <li>.temp 0 20 40 60 80 100，畫 Vref。</li>\n  <li>拿掉一段 startup（若你加了），看能不能卡在 0。</li>\n</ol>\n<div class=\"okbox\">完成線：一張 Vref–溫度圖，說明哪裡是一階抵消、兩端為何又翹（curvature）。</div>\n","l06":"<div class=\"kicker\">實驗 L06 · 電腦</div>\n<h1>簡化 bandgap</h1>\n<p>LTspice 用 BJT 比硬做 CMOS 寄生 PNP 乾淨。目標是「溫度曲線有一個相對平的區」，不是 1.250000 V。</p>\n<ol>\n  <li>用兩顆 NPN（或 PNP），面積比 1:8 或電流比 1:8。</li>\n  <li>用 OP amp（可用通用 opamp 符號先跑通，再換成你自己的兩級 OTA 加分）。</li>\n  <li>電阻比先用手算 K ≈ (VBE 溫漂) / (VT ln n 溫漂) 的量級，再掃。</li>\n  <li>.temp 0 20 40 60 80 100，畫 Vref。</li>\n  <li>拿掉一段 startup（若你加了），看能不能卡在 0。</li>\n</ol>\n<div class=\"okbox\">完成線：一張 Vref–溫度圖，說明哪裡是一階抵消、兩端為何又翹（curvature）。</div>\n","labs/l07.html":"<div class=\"kicker\">實驗 L07 · 電腦 · 必做</div>\n<h1>簡化 LDO</h1>\n<ol>\n  <li>Vref 先用理想 1.2 V。分壓做出 2.5 V 目標。</li>\n  <li>PMOS pass + 你的兩級 OTA 當 error amp。注意 OTA 輸出要能把 PMOS gate 拉到夠低。</li>\n  <li>Vin=3.3 V，Iload 從 0.1 mA 跳到 20 mA，看 Vout 掉多少、多久回來。</li>\n  <li>Vin 加 50 mV 100 kHz 正弦，看 Vout 漣波，估 PSRR。</li>\n  <li>把 Cout 從 1 μF 改 100 pF，觀察穩不穩。能解釋就達標，不必做出產品級 cap-less。</li>\n</ol>\n<div class=\"okbox\">完成線：load transient 圖 + 你能講「error amp 太慢時掉坑更深」。檔名 <code>07_ldo_transient.png</code>。</div>\n","l07":"<div class=\"kicker\">實驗 L07 · 電腦 · 必做</div>\n<h1>簡化 LDO</h1>\n<ol>\n  <li>Vref 先用理想 1.2 V。分壓做出 2.5 V 目標。</li>\n  <li>PMOS pass + 你的兩級 OTA 當 error amp。注意 OTA 輸出要能把 PMOS gate 拉到夠低。</li>\n  <li>Vin=3.3 V，Iload 從 0.1 mA 跳到 20 mA，看 Vout 掉多少、多久回來。</li>\n  <li>Vin 加 50 mV 100 kHz 正弦，看 Vout 漣波，估 PSRR。</li>\n  <li>把 Cout 從 1 μF 改 100 pF，觀察穩不穩。能解釋就達標，不必做出產品級 cap-less。</li>\n</ol>\n<div class=\"okbox\">完成線：load transient 圖 + 你能講「error amp 太慢時掉坑更深」。檔名 <code>07_ldo_transient.png</code>。</div>\n","labs/l08.html":"<div class=\"kicker\">實驗 L08 · 電腦</div>\n<h1>Dickson pump 或 RC OSC 擇一</h1>\n<h2>選項 A：三級 Dickson</h2>\n<ol>\n  <li>兩相反相時脈 0–3.3 V，飛電容先 2 pF，二極體或 diode-connect MOS 當開關。</li>\n  <li>空載看輸出能不能接近理想疊加（會低一截，正常）。</li>\n  <li>加 10 μA、50 μA 負載，看塌多少。</li>\n  <li>加倍 fclk 或 Cfly，再比一次。</li>\n</ol>\n<h2>選項 B：Relaxation OSC</h2>\n<ol>\n  <li>電流源對 C 充電，比較器到門檻就放電。</li>\n  <li>量週期，對 f ≈ I/(C ΔV)。</li>\n  <li>改 VDD ±10%，看頻率飄多少。</li>\n</ol>\n<div class=\"okbox\">完成線：選項 A 或 B 有一張參數掃描圖，並且能講「負載／電源會讓輸出或頻率掉」。</div>\n","l08":"<div class=\"kicker\">實驗 L08 · 電腦</div>\n<h1>Dickson pump 或 RC OSC 擇一</h1>\n<h2>選項 A：三級 Dickson</h2>\n<ol>\n  <li>兩相反相時脈 0–3.3 V，飛電容先 2 pF，二極體或 diode-connect MOS 當開關。</li>\n  <li>空載看輸出能不能接近理想疊加（會低一截，正常）。</li>\n  <li>加 10 μA、50 μA 負載，看塌多少。</li>\n  <li>加倍 fclk 或 Cfly，再比一次。</li>\n</ol>\n<h2>選項 B：Relaxation OSC</h2>\n<ol>\n  <li>電流源對 C 充電，比較器到門檻就放電。</li>\n  <li>量週期，對 f ≈ I/(C ΔV)。</li>\n  <li>改 VDD ±10%，看頻率飄多少。</li>\n</ol>\n<div class=\"okbox\">完成線：選項 A 或 B 有一張參數掃描圖，並且能講「負載／電源會讓輸出或頻率掉」。</div>\n"};
+
+const KEY = "ddi-analog-progress-v1";
+
+const $ = (sel, el = document) => el.querySelector(sel);
+
+function loadProgress() {
+  try {
+    return JSON.parse(localStorage.getItem(KEY)) || defaultProgress();
+  } catch {
+    return defaultProgress();
+  }
+}
+
+function defaultProgress() {
+  return { start: null, modules: {}, labs: {}, exams: {}, notes: "" };
+}
+
+function saveProgress(p) {
+  localStorage.setItem(KEY, JSON.stringify(p));
+}
+
+function todayIndex(p) {
+  if (!p.start) return 1;
+  const t0 = new Date(p.start + "T00:00:00");
+  const now = new Date();
+  const a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.floor((a - t0) / 86400000) + 1;
+  return Math.min(56, Math.max(1, diff));
+}
+
+function moduleById(id) {
+  return COURSE.modules.find((m) => m.id === id);
+}
+
+function countDone(p) {
+  const m = COURSE.modules.filter((x) => p.modules[x.id]).length;
+  const l = COURSE.labs.filter((x) => p.labs[x.id]).length;
+  const e = COURSE.exams.filter((x) => p.exams[x.id]).length;
+  return { m, l, e, mt: COURSE.modules.length, lt: COURSE.labs.length, et: COURSE.exams.length };
+}
+
+function pct(p) {
+  const c = countDone(p);
+  const tot = c.mt + c.lt + c.et;
+  const n = c.m + c.l + c.e;
+  return tot ? Math.round((100 * n) / tot) : 0;
+}
+
+function header(p) {
+  const day = p.start ? `第 ${todayIndex(p)} / 56 天` : "尚未開始";
+  return `<header class="app-header"><div class="wrap">
+    <div class="brand">驅動 IC 類比面試班<small>只針對 source / gamma / LDO / OTA，不走 SerDes</small></div>
+    <div class="day-chip">${day} · ${pct(p)}%</div>
+  </div></header>
+  <nav class="nav">
+    <a href="#/" class="${loc()==="/"?"on":""}"><b>今</b>今日</a>
+    <a href="#/course" class="${loc()==="/course"?"on":""}"><b>課</b>課程</a>
+    <a href="#/exams" class="${loc()==="/exams"?"on":""}"><b>考</b>考試</a>
+    <a href="#/progress" class="${loc()==="/progress"?"on":""}"><b>檔</b>進度</a>
+  </nav>`;
+}
+
+function loc() {
+  const h = (location.hash || "#/").replace("#", "") || "/";
+  return h;
+}
+
+function route() {
+  const p = loadProgress();
+  const h = loc();
+  let html = header(p);
+  html += "<main>";
+  if (h === "/" || h === "") html += viewToday(p);
+  else if (h === "/course") html += viewCourse(p);
+  else if (h === "/exams") html += viewExams(p);
+  else if (h === "/progress") html += viewProgress(p);
+  else if (h.startsWith("/m/")) html += viewLesson(p, h.slice(3));
+  else if (h.startsWith("/lab/")) html += viewLesson(p, h.slice(5));
+  else if (h.startsWith("/exam/")) html += viewExam(p, h.slice(6));
+  else html += `<div class="card"><p>找不到頁面。</p><a class="btn" href="#/">回今日</a></div>`;
+  html += "</main>";
+  $("#app").innerHTML = html;
+  bind(p);
+  window.scrollTo(0, 0);
+}
+
+function viewToday(p) {
+  if (!p.start) {
+    return `<div class="card">
+      <div class="kicker">8 週 · 手機課 + 電腦實驗 + 考試</div>
+      <h1>最短路徑：通過驅動 IC 類比面試</h1>
+      <p class="lede">對象是聯詠／瑞鼎／奇景／矽創這類 <b>display driver 類比</b>，不是聯發科高速介面。假設你晚上有空、週末能開電腦。每天照「今日」做即可。</p>
+      <div class="warn">這不能保證錄取。目標是：OTA、LDO、bandgap 能畫、能講、有 LTspice 圖；並且把 panel／DDI 經驗講成規格，而不是講成驗證流程。</div>
+      <p>按開始後，今天會變成第 1 天。進度存在這支手機／瀏覽器，可在「進度」匯出備份。沒有 Pages 時，手機改開 GitHub App 的 <code>docs/read/README.md</code>。</p>
+      <div class="btnrow"><button id="start">開始 56 天</button>
+      <a class="btn ghost" href="#/course">先看全部課程</a></div>
+    </div>`;
+  }
+  const i = todayIndex(p);
+  const spec = COURSE.days[i - 1];
+  const lines = [];
+  if (spec.phone) {
+    const m = moduleById(spec.phone);
+    lines.push(task("手機", `${m.n} ${m.title}（約 ${m.mins} 分）`, `#/m/${m.id}`, p.modules[m.id]));
+  }
+  if (spec.lab) {
+    const lab = COURSE.labs.find((x) => x.id === spec.lab);
+    lines.push(task("電腦", lab.title, `#/lab/${lab.id}`, p.labs[lab.id]));
+  }
+  if (spec.exam) {
+    const ex = COURSE.exams.find((x) => x.id === spec.exam);
+    const done = p.exams[spec.exam];
+    lines.push(task("考試", ex.title + (done ? `（上次 ${done.score}/${done.total}）` : ""), `#/exam/${ex.id}`, !!done));
+  }
+  if (!spec.phone && !spec.lab && !spec.exam) {
+    lines.push(`<p>今天沒有指定項目。</p>`);
+  }
+  return `<div class="card">
+    <div class="kicker">第 ${i} 天</div>
+    <h1>今天做這些</h1>
+    <p class="lede">${spec.note || ""}</p>
+    ${lines.join("")}
+  </div>
+  <div class="card">
+    <h2>整體</h2>
+    <div class="bar"><span style="width:${pct(p)}%"></span></div>
+    <p class="muted">${pct(p)}% 完成。課程可提前，不必卡在日期。</p>
+    <a class="btn ghost" href="#/course">打開課程表</a>
+  </div>`;
+}
+
+function task(kind, title, href, done) {
+  return `<div class="task"><span class="badge">${kind}</span>
+    <div><a href="${href}">${title}</a>
+    <div class="muted">${done ? "已做過，可再複習" : "尚未完成"}</div></div></div>`;
+}
+
+function viewCourse(p) {
+  const mods = COURSE.modules.map((m) => {
+    const done = p.modules[m.id];
+    return `<a class="mod ${done ? "done" : ""}" href="#/m/${m.id}">
+      <div class="n">${m.n}</div>
+      <div><b>${m.title}</b><div class="meta">${m.why} · 約 ${m.mins} 分</div></div>
+      <div class="mark">${done ? "完成" : ""}</div>
+    </a>`;
+  }).join("");
+  const labs = COURSE.labs.map((l) => {
+    const done = p.labs[l.id];
+    return `<a class="mod ${done ? "done" : ""}" href="#/lab/${l.id}">
+      <div class="n">實</div>
+      <div><b>${l.title}</b><div class="meta">建議在 ${l.after} 之後做</div></div>
+      <div class="mark">${done ? "完成" : ""}</div>
+    </a>`;
+  }).join("");
+  return `<div class="card"><h1>課程</h1><p class="lede">由上往下。標成完成只表示你讀過或做過，考試另外計分。</p>${mods}</div>
+  <div class="card"><h2>電腦實驗</h2>${labs}</div>`;
+}
+
+function viewExams(p) {
+  const rows = COURSE.exams.map((e) => {
+    const r = p.exams[e.id];
+    return `<a class="mod ${r ? "done" : ""}" href="#/exam/${e.id}">
+      <div class="n">考</div>
+      <div><b>${e.title}</b><div class="meta">${r ? `${r.score}/${r.total}　${r.at}` : "還沒考"}</div></div>
+      <div class="mark">${r && r.score / r.total >= 0.6 ? "及格" : r ? "再考" : ""}</div>
+    </a>`;
+  }).join("");
+  return `<div class="card"><h1>考試</h1><p class="lede">每題立即顯示解析。60% 當過關線。不及格回對應課，不要硬往下。</p>${rows}</div>`;
+}
+
+function viewProgress(p) {
+  const c = countDone(p);
+  const examRows = COURSE.exams.map((e) => {
+    const r = p.exams[e.id];
+    return `<tr><td>${e.title}</td><td>${r ? `${r.score}/${r.total}` : "—"}</td><td>${r ? r.at : "—"}</td></tr>`;
+  }).join("");
+  return `<div class="card">
+    <h1>進度</h1>
+    <div class="bar"><span style="width:${pct(p)}%"></span></div>
+    <p>課程 ${c.m}/${c.mt}　實驗 ${c.l}/${c.lt}　考試 ${c.e}/${c.et}</p>
+    <p class="muted">開始日：${p.start || "尚未開始"}</p>
+    <div class="btnrow">
+      <button id="reset" class="ghost">清空進度</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>成績</h2>
+    <table><thead><tr><th>考試</th><th>分數</th><th>時間</th></tr></thead><tbody>${examRows}</tbody></table>
+  </div>
+  <div class="card">
+    <h2>備份</h2>
+    <p class="lede">換手機前複製下面整段，到新裝置貼上按匯入。</p>
+    <textarea class="backup" id="dump">${JSON.stringify(p)}</textarea>
+    <div class="btnrow">
+      <button id="exp">重新產生</button>
+      <button id="imp" class="ghost">匯入</button>
+    </div>
+  </div>`;
+}
+
+function viewLesson(p, id) {
+  const isLab = loc().startsWith("/lab/");
+  return `<div class="card" id="lesson"><p class="muted">載入中…</p></div>`;
+}
+
+function fillLesson(p, id, isLab) {
+  const box = $("#lesson");
+  if (!box) return;
+  const path = isLab ? `labs/${id}.html` : `lessons/${id}.html`;
+  const packed = window.LESSONS || {};
+  const html = packed[path] || packed[id];
+  if (!html) {
+    box.innerHTML = `<h1>載入失敗</h1>
+      <p>找不到 ${path}。私人庫沒有 GitHub Pages。手機請在 GitHub App 打開 <code>docs/read/${id}.md</code>。電腦可在 <code>docs/</code> 執行 <code>python3 -m http.server 8080</code>。</p>`;
+    return;
+  }
+  box.innerHTML = html;
+  const done = isLab ? p.labs[id] : p.modules[id];
+  const extra = document.createElement("div");
+  extra.className = "btnrow";
+  extra.innerHTML = `<button id="mark" class="${done ? "ghost" : ""}">${done ? "已標記完成" : "標記完成"}</button>
+    <a class="btn ghost" href="#/course">回課程</a>`;
+  box.appendChild(extra);
+  $("#mark").onclick = () => {
+    const cur = loadProgress();
+    if (isLab) cur.labs[id] = new Date().toISOString();
+    else cur.modules[id] = new Date().toISOString();
+    saveProgress(cur);
+    route();
+  };
+}
+
+function viewExam(p, id) {
+  const quiz = QUIZZES[id];
+  const meta = COURSE.exams.find((e) => e.id === id);
+  if (!quiz) return `<div class="card"><p>沒有這份考卷。</p></div>`;
+  let n = 0;
+  const qs = quiz.map((item, i) => {
+    const opts = item.options.map((o, j) =>
+      `<button class="opt" data-q="${i}" data-j="${j}">${String.fromCharCode(65 + j)}. ${o}</button>`
+    ).join("");
+    return `<div class="q" data-i="${i}">
+      <div class="stem">${i + 1}. ${item.q}</div>${opts}
+      <div class="explain" hidden></div>
+    </div>`;
+  }).join("");
+  return `<div class="card">
+    <div class="kicker">${meta ? meta.title : id}</div>
+    <h1>考試</h1>
+    <p class="lede">選完才顯示解析。全部答完會存分數。</p>
+    <div id="paper">${qs}</div>
+    <p id="scoreline" class="muted"></p>
+    <div class="btnrow"><a class="btn ghost" href="#/exams">回考試列表</a></div>
+  </div>`;
+}
+
+function bind(p) {
+  const start = $("#start");
+  if (start) start.onclick = () => {
+    const cur = loadProgress();
+    const d = new Date();
+    cur.start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    saveProgress(cur);
+    route();
+  };
+  const reset = $("#reset");
+  if (reset) reset.onclick = () => {
+    if (confirm("確定清空？")) {
+      saveProgress(defaultProgress());
+      route();
+    }
+  };
+  const exp = $("#exp");
+  if (exp) exp.onclick = () => { $("#dump").value = JSON.stringify(loadProgress(), null, 2); };
+  const imp = $("#imp");
+  if (imp) imp.onclick = () => {
+    try {
+      const obj = JSON.parse($("#dump").value);
+      saveProgress(obj);
+      route();
+    } catch {
+      alert("JSON 格式不對");
+    }
+  };
+
+  const h = loc();
+  if (h.startsWith("/m/")) fillLesson(p, h.slice(3), false);
+  if (h.startsWith("/lab/")) fillLesson(p, h.slice(5), true);
+
+  const paper = $("#paper");
+  if (paper) {
+    const id = loc().slice("/exam/".length);
+    const quiz = QUIZZES[id];
+    const chosen = Array(quiz.length).fill(null);
+    paper.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".opt");
+      if (!btn) return;
+      const q = +btn.dataset.q;
+      const j = +btn.dataset.j;
+      if (chosen[q] !== null) return;
+      chosen[q] = j;
+      const item = quiz[q];
+      const wrap = btn.parentElement;
+      wrap.querySelectorAll(".opt").forEach((b) => {
+        if (+b.dataset.j === item.a) b.classList.add("correct");
+      });
+      if (j !== item.a) btn.classList.add("wrong");
+      const ex = wrap.querySelector(".explain");
+      ex.hidden = false;
+      ex.textContent = item.exp;
+      if (chosen.every((x) => x !== null)) {
+        const score = chosen.filter((v, i) => v === quiz[i].a).length;
+        const cur = loadProgress();
+        cur.exams[id] = {
+          score,
+          total: quiz.length,
+          at: new Date().toLocaleString("zh-TW")
+        };
+        saveProgress(cur);
+        $("#scoreline").textContent =
+          `分數 ${score}/${quiz.length}（${Math.round((100 * score) / quiz.length)}%）。60% 以上當過關。`;
+      }
+    });
+  }
+}
+
+window.addEventListener("hashchange", route);
+window.addEventListener("load", route);
+
+  </script>
+</body>
+</html>
