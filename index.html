@@ -8,95 +8,61 @@
   <style>
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font: 16px/1.45 system-ui, sans-serif;
-      background: #101114;
-      color: #f2f3f5;
-    }
-    main {
-      max-width: 420px;
-      margin: 0 auto;
-      padding: 28px 18px 48px;
-    }
+    body { margin: 0; font: 16px/1.45 system-ui, sans-serif; background: #101114; color: #f2f3f5; }
+    main { max-width: 440px; margin: 0 auto; padding: 22px 14px 40px; }
     h1 { font-size: 22px; margin: 0 0 8px; }
-    p { margin: 0 0 14px; color: #b8bcc6; }
-    label { display: block; margin: 14px 0 6px; font-size: 14px; }
+    p { margin: 0 0 12px; color: #b8bcc6; }
+    label { display: block; margin: 12px 0 6px; font-size: 14px; }
     input {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid #2c313a;
-      background: #181b21;
-      color: inherit;
-      font-size: 16px;
+      width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #2c313a;
+      background: #181b21; color: inherit; font-size: 16px;
     }
-    button, a.btn {
-      display: block;
-      width: 100%;
-      margin-top: 12px;
-      padding: 14px 16px;
-      border: 0;
-      border-radius: 12px;
-      background: #f0b90b;
-      color: #1a1403;
-      font-size: 16px;
-      font-weight: 700;
-      text-align: center;
-      text-decoration: none;
+    button {
+      border: 0; border-radius: 12px; background: #f0b90b; color: #1a1403;
+      font-size: 16px; font-weight: 700; padding: 14px 16px;
     }
-    button.secondary, a.secondary {
-      background: #232833;
-      color: #f2f3f5;
-      font-weight: 600;
-    }
+    button.secondary { background: #232833; color: #f2f3f5; font-weight: 600; }
     button:disabled { opacity: 0.55; }
-    #out {
-      margin-top: 16px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #181b21;
-      white-space: pre-wrap;
-    }
+    #go, #keys button { width: 100%; margin-top: 12px; }
+    #out { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #181b21; white-space: pre-wrap; }
     #out.warn { color: #ff8d8d; }
     #out.ok { color: #8ee0a8; }
-    details { margin-top: 22px; color: #b8bcc6; }
-    textarea {
-      width: 100%;
-      min-height: 88px;
-      margin-top: 8px;
-      border-radius: 10px;
-      border: 1px solid #2c313a;
-      background: #181b21;
-      color: #d5d8e0;
-      font-size: 12px;
+    #screen {
+      display: none; width: 100%; margin-top: 12px; border-radius: 12px; background: #000;
+      touch-action: manipulation;
     }
+    #keys { display: none; }
+    .row { display: flex; gap: 8px; }
+    .row button { flex: 1; }
   </style>
 </head>
 <body>
 <main>
   <h1>事件合約登入</h1>
-  <p>用手機向幣安要一次新的登入，確認後寫進交易機。這裡要填的是監控網密碼，不是幣安密碼。</p>
+  <p>按下去會打開幣安登入頁。你在畫面上自己登入，完成後登入狀態會送到交易機。下面要填的是監控網密碼。</p>
   <label for="pw">監控網密碼</label>
   <input id="pw" type="password" autocomplete="current-password" />
-  <button id="look" type="button">查看還剩幾天</button>
-  <button id="go" type="button">開始刷新</button>
+  <button id="go" type="button">打開幣安登入</button>
   <div id="out">還沒開始。</div>
-  <details>
-    <summary>若上面失敗，改貼已有的登入憑證</summary>
-    <label for="p20">p20t</label>
-    <input id="p20" type="password" autocomplete="off" />
-    <label for="csrf">csrftoken</label>
-    <input id="csrf" type="password" autocomplete="off" />
-    <button id="paste" class="secondary" type="button">用貼上的憑證更新</button>
-    <p>在幣安網頁登入後，若這個瀏覽器讀得到憑證，可以把下面整段存成書籤再點一次。</p>
-    <textarea id="mark" readonly></textarea>
-  </details>
+  <img id="screen" alt="幣安登入頁" />
+  <div id="keys">
+    <label for="typed">打在登入頁上</label>
+    <input id="typed" autocomplete="off" />
+    <div class="row">
+      <button id="send" class="secondary" type="button">送出這段字</button>
+      <button id="back" class="secondary" type="button">退格</button>
+    </div>
+    <button id="enter" class="secondary" type="button">Enter</button>
+  </div>
 </main>
 <script>
 (function () {
   var out = document.getElementById("out");
   var pw = document.getElementById("pw");
+  var screen = document.getElementById("screen");
+  var keys = document.getElementById("keys");
+  var liveId = "";
+  var timer = 0;
 
   function api(path) {
     if (location.hostname.endsWith("github.io")) {
@@ -110,10 +76,6 @@
     out.className = kind || "";
   }
 
-  function password() {
-    return (pw.value || "").trim();
-  }
-
   async function post(path, body) {
     var res = await fetch(api(path), {
       method: "POST",
@@ -123,117 +85,83 @@
     return res.json();
   }
 
-  document.getElementById("mark").value =
-    "javascript:(function(){var m=document.cookie.match(/(?:^|; )p20t=([^;]+)/);var c=document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);if(!m){alert('\\u9019\\u500b\\u700f\\u89bd\\u5668\\u8b80\\u4e0d\\u5230\\u767b\\u5165\\u6191\\u8b49\\u3002\\u8acb\\u56de\\u5230\\u5237\\u65b0\\u9801\\uff0c\\u7528\\u958b\\u59cb\\u5237\\u65b0\\u3002');return;}var pw=prompt('\\u76e3\\u63a7\\u7db2\\u5bc6\\u78bc');if(!pw)return;fetch('https://autopredict.org/bots/api/event-login/finish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:pw,p20t:decodeURIComponent(m[1]),csrftoken:c?decodeURIComponent(c[1]):''})}).then(function(r){return r.json()}).then(function(j){alert(j.ok?('\\u5df2\\u66f4\\u65b0\\uff0c\\u5269 '+(j.days||0)+' \\u5929 '+(j.hours||0)+' \\u5c0f\\u6642'):('\\u6c92\\u6709\\u66f4\\u65b0\\uff1a'+(j.error||'\\u5931\\u6557')));}).catch(function(){alert('\\u9001\\u51fa\\u5931\\u6557');});})();";
+  function showScreen(on) {
+    screen.style.display = on ? "block" : "none";
+    keys.style.display = on ? "block" : "none";
+  }
 
-  document.getElementById("look").onclick = async function () {
-    if (!password()) { say("先填監控網密碼。", "warn"); return; }
-    say("讀取中…");
+  async function tick() {
+    if (!liveId) return;
     try {
-      var data = await post("/status", { password: password() });
-      if (!data.ok && data.days == null) { say(data.error || "讀不到。", "warn"); return; }
-      var run = data.running ? "交易中" : "已停止";
-      if (data.days == null) say("事件合約" + run + "。\n登入剩餘時間讀不到。", "warn");
-      else say("事件合約" + run + "。\n登入還剩 " + data.days + " 天 " + data.hours + " 小時。", data.login_ok ? "ok" : "warn");
+      var data = await (await fetch(api("/live/view?id=" + encodeURIComponent(liveId)))).json();
+      if (data.phase === "starting") {
+        say("正在打開幣安登入頁…\n電腦要開著，視窗也會出現在電腦上。");
+        return;
+      }
+      if (data.phase === "ready") {
+        say("這就是幣安登入頁。點畫面，或在下面打字。\n登完並點信任此裝置後，留在這頁。");
+        if (data.has_frame) {
+          screen.src = api("/live/frame?id=" + encodeURIComponent(liveId) + "&t=" + Date.now());
+          showScreen(true);
+        }
+        return;
+      }
+      clearInterval(timer);
+      timer = 0;
+      showScreen(false);
+      if (data.phase === "done") {
+        say("已更新。\n登入還剩 " + (data.days || 0) + " 天 " + (data.hours || 0) + " 小時。", "ok");
+      } else {
+        say(data.error || "登入沒有完成。", "warn");
+      }
     } catch (e) {
-      say("連不到監控網。", "warn");
+      say("跟監控網中斷了。若你已經登完，稍後再看監控網上的登入天數。", "warn");
     }
-  };
-
-  document.getElementById("paste").onclick = async function () {
-    if (!password()) { say("先填監控網密碼。", "warn"); return; }
-    say("送出中…");
-    try {
-      var data = await post("/finish", {
-        password: password(),
-        p20t: document.getElementById("p20").value.trim(),
-        csrftoken: document.getElementById("csrf").value.trim()
-      });
-      document.getElementById("p20").value = "";
-      document.getElementById("csrf").value = "";
-      if (!data.ok) { say(data.error || "沒有更新。", "warn"); return; }
-      say("已更新。\n登入還剩 " + data.days + " 天 " + data.hours + " 小時。", "ok");
-    } catch (e) {
-      say("連不到監控網。", "warn");
-    }
-  };
+  }
 
   document.getElementById("go").onclick = async function () {
-    var btn = document.getElementById("go");
-    if (!password()) { say("先填監控網密碼。", "warn"); return; }
-    btn.disabled = true;
-    say("向幣安要登入碼…");
+    var password = (pw.value || "").trim();
+    if (!password) { say("先填監控網密碼。", "warn"); return; }
+    this.disabled = true;
+    say("正在打開幣安登入頁…");
     try {
-      var pre = await fetch("https://accounts.binance.com/bapi/accounts/v1/public/account/security/request/precheck", {
-        method: "POST",
-        headers: { "content-type": "application/json", "clienttype": "web", "lang": "zh-CN" },
-        body: JSON.stringify({ bizType: "qrcode_login" })
-      });
-      var preJson = await pre.json();
-      if (!preJson || preJson.success === false) {
-        say((preJson && (preJson.message || preJson.msg)) || "幣安拒絕了這次登入請求。請改用下方貼上憑證。", "warn");
-        btn.disabled = false;
+      var data = await post("/live/start", { password: password });
+      if (!data.ok || !data.id) {
+        say(data.error || "沒有打開。", "warn");
+        this.disabled = false;
         return;
       }
-      var sessionId = (preJson.data && preJson.data.sessionId) || "";
-      var randomId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
-      var got = await fetch("https://accounts.binance.com/bapi/accounts/v3/public/qrcode/login/get", {
-        method: "POST",
-        headers: { "content-type": "application/json", "clienttype": "web", "lang": "zh-CN" },
-        body: JSON.stringify({ random: randomId, sessionId: sessionId })
-      });
-      var gotJson = await got.json();
-      var box = (gotJson && gotJson.data) || {};
-      var code = box.qrCode || "";
-      var original = box.originalQrCode || code;
-      if (!gotJson || gotJson.success === false || !code) {
-        say((gotJson && (gotJson.message || gotJson.msg)) || "幣安沒有給登入碼。請改用下方貼上憑證。", "warn");
-        btn.disabled = false;
-        return;
-      }
-      var watch = await post("/watch", {
-        password: password(),
-        random: randomId,
-        sessionId: sessionId,
-        qrCode: code,
-        originalQrCode: original,
-        userAgent: navigator.userAgent
-      });
-      if (!watch.ok || !watch.id) {
-        say(watch.error || "監控網沒有開始等待。", "warn");
-        btn.disabled = false;
-        return;
-      }
-      var link = document.createElement("a");
-      link.className = "btn";
-      link.href = "https://app.binance.com/qr/" + encodeURIComponent(code);
-      link.textContent = "打開幣安 App 確認";
-      out.className = "";
-      out.textContent = "監控網已在等確認。點下面在 App 裡同意，然後留在這頁。\n";
-      out.appendChild(link);
-      var alt = document.createElement("a");
-      alt.className = "btn secondary";
-      alt.href = "binance://login/qr?code=" + encodeURIComponent(code);
-      alt.textContent = "若沒有打開，再試一次";
-      out.appendChild(alt);
-      var timer = setInterval(async function () {
-        try {
-          var st = await (await fetch(api("/watch?id=" + encodeURIComponent(watch.id)))).json();
-          if (st.phase === "waiting" || st.phase === "installing") return;
-          clearInterval(timer);
-          btn.disabled = false;
-          if (st.phase === "done") say("已更新。\n登入還剩 " + st.days + " 天 " + st.hours + " 小時。", "ok");
-          else say(st.error || "沒有更新。", "warn");
-        } catch (e) {
-          clearInterval(timer);
-          btn.disabled = false;
-          say("等待中斷。若 App 已確認，請按查看還剩幾天。", "warn");
-        }
-      }, 2000);
+      liveId = data.id;
+      if (timer) clearInterval(timer);
+      timer = setInterval(tick, 800);
+      tick();
     } catch (e) {
-      say("這支手機的瀏覽器沒能直接向幣安要登入碼。請改用下方貼上憑證。", "warn");
-      btn.disabled = false;
+      say("連不到監控網。", "warn");
     }
+    this.disabled = false;
+  };
+
+  screen.addEventListener("click", function (ev) {
+    if (!liveId || !screen.naturalWidth) return;
+    var rect = screen.getBoundingClientRect();
+    var x = Math.round((ev.clientX - rect.left) / rect.width * screen.naturalWidth);
+    var y = Math.round((ev.clientY - rect.top) / rect.height * screen.naturalHeight);
+    post("/live/input", { id: liveId, kind: "tap", x: x, y: y }).catch(function () {});
+  });
+
+  document.getElementById("send").onclick = function () {
+    var text = document.getElementById("typed").value;
+    if (!liveId || !text) return;
+    document.getElementById("typed").value = "";
+    post("/live/input", { id: liveId, kind: "type", text: text }).catch(function () {});
+  };
+  document.getElementById("back").onclick = function () {
+    if (!liveId) return;
+    post("/live/input", { id: liveId, kind: "key", key: "Backspace" }).catch(function () {});
+  };
+  document.getElementById("enter").onclick = function () {
+    if (!liveId) return;
+    post("/live/input", { id: liveId, kind: "key", key: "Enter" }).catch(function () {});
   };
 })();
 </script>
