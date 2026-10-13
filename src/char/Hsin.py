@@ -202,14 +202,22 @@ class Hsin(BaseChar):
         self.click()
 
     def _build_enhanced_step(self):
-        if self.enhanced_e_ready():
-            if self.cast_enhanced_e():
-                self._set_stage('dominion')
+        if self.enhanced_e_ready() or self.is_forte_full():
+            if not self.cast_enhanced_e():
+                self._press_enhanced_anyway()
+            self._set_stage('dominion')
             return
-        if self.heavy_available() == 2 and time.time() - self._stage_entered > 0.6:
+        if time.time() - self._stage_entered > 1.5:
+            self._press_enhanced_anyway()
             self._set_stage('dominion')
             return
         self.click()
+
+    def _press_enhanced_anyway(self):
+        self.logger.info('Hsin enhanced E: icon missed, press anyway')
+        self.send_resonance_key()
+        self.record_resonance_use()
+        self.sleep(0.4)
 
     def _dominion_step(self):
         if self.heavy_available() == 2:

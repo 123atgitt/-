@@ -199,18 +199,13 @@ class Rover(BaseChar):
         self.wait_down(click=False)
         self.click_echo()
         self.click_liberation(click_f=False)
-        if not self.electric_skill_ready() and self.resonance_available():
-            if self.click_resonance(send_click=False, time_out=1)[0]:
+        if self.resonance_available() and not self.electric_skill_ready():
+            if self.click_resonance(send_click=False, time_out=0.6)[0]:
                 self.sleep(0.1)
-        start = time.time()
-        while not self.electric_skill_ready() and self.time_elapsed_accounting_for_freeze(start) < 6:
-            self.click()
-            self.sleep(0.1)
-        if self.electric_skill_ready():
-            if not self.short_electric_skill():
-                self.logger.info('rover: electric enhanced resonance not confirmed')
-        else:
-            self.logger.info('rover: electric forte not ready before concerto gate')
+        # 兩個圖示要同時亮才算就緒，常常因此整段跳過。短普攻後一定短按強化小招。
+        self.continues_normal_attack(1.5)
+        if not self.short_electric_skill():
+            self._press_enhanced_anyway()
         if not self.is_con_full():
             self.continues_normal_attack(5, until_con_full=True)
         if not self.is_con_full():
@@ -258,6 +253,13 @@ class Rover(BaseChar):
                 return True
             self.logger.info(f'rover: electric enhanced resonance attempt {attempt + 1} not confirmed')
         return False
+
+    def _press_enhanced_anyway(self):
+        """圖示沒亮也短按一次，避免只剩普攻把協奏打滿。"""
+        self.logger.info('rover: enhanced icon missed, short press anyway')
+        self.send_resonance_key(down_time=0.05)
+        self.record_resonance_use()
+        self.sleep(1.2)
 
     def perform_spectro_routine(self):
         if self.has_intro:

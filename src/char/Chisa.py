@@ -133,20 +133,23 @@ class Chisa(BaseChar):
             self.wait_down()
         self.click_echo(time_out=0)
         self.click_liberation(wait_if_cd_ready=0)
-        if not self.is_forte_full() and self.resonance_available():
+        if self.resonance_available():
             self.click_resonance(time_out=0.5)
-        start = time.time()
-        while not self.is_forte_full() and time.time() - start < 4:
-            self.click()
-            self.sleep(0.1)
-        if self.is_forte_full():
-            self.perform_forte()
+        # 回路圖示常常認不到。小招後只補短普攻，然後一定按住強化小招和電鋸。
+        self.continues_normal_attack(1.2)
+        self._cast_enhanced_saw()
         if not self.is_con_full():
             self.continues_normal_attack(5, until_con_full=True)
         if not self.is_con_full():
             self.logger.info('chisa: set finished before concerto was full')
         set_prefer(self, 'Rover')
         return self.switch_next_char()
+
+    def _cast_enhanced_saw(self):
+        if self.flying():
+            self.wait_down()
+        self.task.send_key(self.get_resonance_key(), down_time=1.2)
+        self.heavy_attack(3.5)
 
     def do_support_perform(self):
         needs_long_actions = self.has_intro and not self.has_buff()
