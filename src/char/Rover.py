@@ -209,20 +209,18 @@ class Rover(BaseChar):
         self.wait_down(click=False)
         self.click_echo()
         self.click_liberation(click_f=False)
-        if not self.electric_skill_ready() and self.resonance_available():
-            if self.click_resonance(send_click=False, time_out=1)[0]:
+        # 強化小招圖示亮了就不要先點普通小招，也不要繼續普攻把這下拖過去。
+        if not self._enhanced_prompt() and self.resonance_available():
+            if self.click_resonance(send_click=False, time_out=0.6)[0]:
                 self.sleep(0.1)
         start = time.time()
-        while not self.electric_skill_ready() and self.time_elapsed_accounting_for_freeze(start) < 4:
+        while not self._enhanced_prompt() and self.time_elapsed_accounting_for_freeze(start) < 4:
             ensure_combat(self)
+            if self._enhanced_prompt():
+                break
             self.click()
             self.sleep(0.1)
-        if self.electric_skill_ready():
-            if not self.short_electric_skill():
-                self.logger.info('rover: electric enhanced resonance not confirmed')
-        else:
-            self.logger.info('rover: enhanced icon missed, short press once')
-            self._example_short_press()
+        self._press_short_enhanced()
         ensure_combat(self)
         if not self.is_con_full():
             self.click_liberation(click_f=False)
@@ -233,15 +231,25 @@ class Rover(BaseChar):
             self.logger.info('rover: set finished before concerto was full')
         set_prefer(self, 'Hsin')
 
-    def _example_short_press(self):
-        """跟 short_electric_skill 同一種短按，只試一次。長按會進臨界共鳴。"""
-        start = time.time()
-        self.send_resonance_key(down_time=0.05)
-        self.task.wait_until(
-            lambda: self.time_elapsed_accounting_for_freeze(start) >= 1.5
-            and not self.is_forte_full() and not self.is_e_forte_full(),
-            time_out=2.6, settle_time=0.2, pre_action=self.check_combat)
-        self.record_resonance_use()
+    def _enhanced_prompt(self):
+        # 畫面上的強化小招圖示即可。白條回路常常對不上，不能拿來擋這一下。
+        return bool(self.is_e_forte_full()) or self.is_forte_full()
+
+    def _press_short_enhanced(self):
+        """短按。圖示還亮就再按一次。長按會進臨界共鳴。"""
+        for attempt in range(2):
+            ensure_combat(self)
+            start = time.time()
+            self.send_resonance_key(down_time=0.05)
+            consumed = bool(self.task.wait_until(
+                lambda: self.time_elapsed_accounting_for_freeze(start) >= 0.45
+                and not self.is_e_forte_full(),
+                time_out=1.2, settle_time=0.05, pre_action=self.check_combat))
+            self.record_resonance_use()
+            if consumed or not self.is_e_forte_full():
+                return True
+            self.logger.info(f'rover: enhanced icon still lit, short press {attempt + 2}')
+        return False
 
     def _perform_electric_routine_default(self):
         self.wait_down(click=False)
