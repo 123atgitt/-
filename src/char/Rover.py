@@ -214,12 +214,12 @@ class Rover(BaseChar):
             if self.click_resonance(send_click=False, time_out=0.6)[0]:
                 self.sleep(0.1)
         start = time.time()
-        while not self._enhanced_prompt() and self.time_elapsed_accounting_for_freeze(start) < 4:
-            ensure_combat(self)
+        while self.time_elapsed_accounting_for_freeze(start) < 4:
             if self._enhanced_prompt():
                 break
             self.click()
             self.sleep(0.1)
+            ensure_combat(self)
         self._press_short_enhanced()
         ensure_combat(self)
         if not self.is_con_full():
@@ -236,20 +236,13 @@ class Rover(BaseChar):
         return bool(self.is_e_forte_full()) or self.is_forte_full()
 
     def _press_short_enhanced(self):
-        """短按。圖示還亮就再按一次。長按會進臨界共鳴。"""
-        for attempt in range(2):
-            ensure_combat(self)
-            start = time.time()
+        """圖示亮了立刻短按。長按會進臨界共鳴。"""
+        self.send_resonance_key(down_time=0.05)
+        self.record_resonance_use()
+        self.sleep(0.12, check_combat=False)
+        if self.is_e_forte_full():
             self.send_resonance_key(down_time=0.05)
-            consumed = bool(self.task.wait_until(
-                lambda: self.time_elapsed_accounting_for_freeze(start) >= 0.45
-                and not self.is_e_forte_full(),
-                time_out=1.2, settle_time=0.05, pre_action=self.check_combat))
             self.record_resonance_use()
-            if consumed or not self.is_e_forte_full():
-                return True
-            self.logger.info(f'rover: enhanced icon still lit, short press {attempt + 2}')
-        return False
 
     def _perform_electric_routine_default(self):
         self.wait_down(click=False)
