@@ -84,6 +84,34 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+_PHASE_OWNER = {
+    PHASE_CHISA_OPEN: 'Chisa',
+    PHASE_CHISA_SAW: 'Chisa',
+    PHASE_ROVER_AXIS: 'Rover',
+    PHASE_ROVER_FINAL: 'Rover',
+    PHASE_HSIN: 'Hsin',
+}
+
+
+def leave_if_not_owner(char):
+    """上場的人不是這一步的主人時，立刻把場交回去。連跳兩次仍交不出去就停下。"""
+    loop = get_loop(char)
+    if loop is None:
+        return False
+    owner = _PHASE_OWNER.get(loop.get('phase'))
+    if owner is None or owner == char.name:
+        loop['bounces'] = 0
+        return False
+    bounces = loop.get('bounces', 0)
+    if bounces >= 2:
+        return False
+    loop['bounces'] = bounces + 1
+    char.logger.info(f'{char.name}: step {loop.get("phase")} belongs to {owner}')
+    set_prefer(char, owner)
+    char.switch_next_char()
+    return True
 # ELECTRO_LOOP_SHARED_END
 
 _ROVER_FORM_NAMES = {
@@ -113,6 +141,9 @@ class Rover(BaseChar):
         if wants_must(self):
             return SwitchPriority.MUST
         return super().get_switch_priority(current_char, has_intro, target_low_con)
+
+    def do_get_switch_priority(self, current_char, has_intro, target_low_con=False):
+        return self.get_switch_priority(current_char, has_intro, target_low_con)
 
     @property
     def display_name(self):
@@ -150,6 +181,11 @@ class Rover(BaseChar):
         self.init()
         if not self.has_intro:
             self.sleep(0.01)
+        if self.ring_index == Elements.ELECTRIC and is_hsin_electro_team(self):
+            phase = (get_loop(self) or {}).get('phase')
+            if phase not in (PHASE_ROVER_AXIS, PHASE_ROVER_FINAL) and self._con_value() <= 0.8:
+                if leave_if_not_owner(self):
+                    return
         if self.ring_index == Elements.HAVOC:
             self.intro_motion_freeze_duration = 0.64
             self.logger.info('rover: form-dispatch ring=HAVOC routine=havoc')
@@ -219,7 +255,7 @@ class Rover(BaseChar):
     def _electric_axis(self):
         """合軸只放大招。協奏被大招灌滿時不能切回千咲，否則電髓會給錯人。"""
         self.wait_down(click=False)
-        if self._con_value() <= 0.55 and self.liberation_available():
+        if self._con_value() <= 0.8 and self.liberation_available():
             self.click_liberation(click_f=False)
         if self.is_con_full() or self._con_value() > 0.8:
             self.logger.info('rover: axis liberation filled concerto, fold into final visit')

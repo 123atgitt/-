@@ -68,6 +68,23 @@ class ElectroLoopTest(unittest.TestCase):
         self.assertFalse(self.ns['wants_must'](chars[1]))
         self.assertIsNone(self.ns['get_loop'](chars[0]))
 
+    def test_wrong_character_yields_the_field_back(self):
+        task, (hsin, chisa, rover) = self.team(1)
+        self.ns['set_prefer'](chisa, 'Rover', phase=self.ns['PHASE_ROVER_AXIS'])
+        self.ns['consume_prefer'](rover)
+        self.assertTrue(self.ns['leave_if_not_owner'](hsin))
+        self.assertEqual(hsin.switched, 1)
+        self.assertEqual(task._hsin_electro_loop['prefer'], 'Rover')
+        self.assertFalse(self.ns['leave_if_not_owner'](rover))
+        self.assertEqual(rover.switched, 0)
+
+    def test_yield_stops_after_two_bounces(self):
+        task, chars = self.team(1)
+        self.ns['get_loop'](chars[0])['phase'] = self.ns['PHASE_HSIN']
+        self.assertTrue(self.ns['leave_if_not_owner'](chars[1]))
+        self.assertTrue(self.ns['leave_if_not_owner'](chars[1]))
+        self.assertFalse(self.ns['leave_if_not_owner'](chars[1]))
+
     def test_reset_returns_to_chisa_open(self):
         task, chars = self.team(1)
         self.ns['set_prefer'](chars[0], 'Hsin', phase=self.ns['PHASE_ROVER_FINAL'])
@@ -77,12 +94,22 @@ class ElectroLoopTest(unittest.TestCase):
         self.assertFalse(self.ns['wants_must'](chars[0]))
 
 
+class Logger:
+    def info(self, message):
+        self.message = message
+
+
 class Char:
     def __init__(self, name, form=-1):
         self.name = name
         self.ring_index = form
         self._last_known_form = -1
         self.task = None
+        self.logger = Logger()
+        self.switched = 0
+
+    def switch_next_char(self):
+        self.switched += 1
 
 
 class Task:

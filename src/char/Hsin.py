@@ -85,6 +85,34 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+_PHASE_OWNER = {
+    PHASE_CHISA_OPEN: 'Chisa',
+    PHASE_CHISA_SAW: 'Chisa',
+    PHASE_ROVER_AXIS: 'Rover',
+    PHASE_ROVER_FINAL: 'Rover',
+    PHASE_HSIN: 'Hsin',
+}
+
+
+def leave_if_not_owner(char):
+    """上場的人不是這一步的主人時，立刻把場交回去。連跳兩次仍交不出去就停下。"""
+    loop = get_loop(char)
+    if loop is None:
+        return False
+    owner = _PHASE_OWNER.get(loop.get('phase'))
+    if owner is None or owner == char.name:
+        loop['bounces'] = 0
+        return False
+    bounces = loop.get('bounces', 0)
+    if bounces >= 2:
+        return False
+    loop['bounces'] = bounces + 1
+    char.logger.info(f'{char.name}: step {loop.get("phase")} belongs to {owner}')
+    set_prefer(char, owner)
+    char.switch_next_char()
+    return True
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -106,6 +134,9 @@ class Hsin(BaseChar):
             return SwitchPriority.MUST
         return super().get_switch_priority(current_char, has_intro, target_low_con)
 
+    def do_get_switch_priority(self, current_char, has_intro, target_low_con=False):
+        return self.get_switch_priority(current_char, has_intro, target_low_con)
+
     def skip_combat_check(self):
         if self.h2_guard_until and time.time() >= self.h2_guard_until:
             self.logger.info('Hsin H2 protection expired; resume combat checks')
@@ -121,6 +152,8 @@ class Hsin(BaseChar):
         self._echo_used = False
         self._stage = 'open'
         self._stage_entered = time.time()
+        if is_hsin_electro_team(self) and leave_if_not_owner(self):
+            return
         consume_prefer(self)
         self.logger.debug(f'Hsin perform start: has_intro={self.has_intro}')
         try:
@@ -177,12 +210,12 @@ class Hsin(BaseChar):
         )
 
     def _open_step(self):
+        if self.heavy_available() == 1:
+            self.handle_heavy(1)
+            return
         if not self._echo_used:
             self._echo_used = True
             self.click_echo(time_out=0)
-            return
-        if self.heavy_available() == 1:
-            self.handle_heavy(1)
             return
         if self._cast_marked_liberation(lib2=False):
             self._set_stage('after_transform')
