@@ -6,11 +6,18 @@ from src.char.BaseChar import BaseChar, SwitchPriority
 # ELECTRO_LOOP_SHARED_BEGIN
 # 這一段在 Hsin.py、Chisa.py、Rover.py 必須逐字相同。
 # 三個角色不互相 import，只共用 task._hsin_electro_loop。
-# 每人打完自己的一套，協奏滿了才切給下一個人。
+# 合軸：千咲起手切雷主，雷主只放大招切回千咲，電鋸協奏一滿再切回雷主，雷主打完切心。
 LOOP_ATTR = '_hsin_electro_loop'
+
+PHASE_CHISA_OPEN = 'chisa_open'
+PHASE_ROVER_AXIS = 'rover_axis'
+PHASE_CHISA_SAW = 'chisa_saw'
+PHASE_ROVER_FINAL = 'rover_final'
+PHASE_HSIN = 'hsin'
 
 _ELECTRIC = 1
 _NON_ELECTRIC = (0, 2, 3, 4, 5)
+_AXIS_CON = 0.8
 
 
 def _chars(task):
@@ -47,7 +54,7 @@ def get_loop(char, create=True):
         return None
     loop = getattr(task, LOOP_ATTR, None)
     if loop is None and create:
-        loop = {'prefer': None}
+        loop = {'phase': PHASE_CHISA_OPEN, 'prefer': None}
         setattr(task, LOOP_ATTR, loop)
     return loop
 
@@ -56,7 +63,7 @@ def reset_loop(char):
     task = getattr(char, 'task', None)
     if task is None:
         return
-    setattr(task, LOOP_ATTR, {'prefer': None})
+    setattr(task, LOOP_ATTR, {'phase': PHASE_CHISA_OPEN, 'prefer': None})
 
 
 def consume_prefer(char):
@@ -65,11 +72,13 @@ def consume_prefer(char):
         loop['prefer'] = None
 
 
-def set_prefer(char, name):
+def set_prefer(char, name, phase=None):
     loop = get_loop(char, create=True)
     if loop is None:
         return None
     loop['prefer'] = name
+    if phase is not None:
+        loop['phase'] = phase
     return loop
 
 
@@ -78,6 +87,13 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+def axis_still_open(char):
+    """協奏超過 0.8 就會被當成真正的延奏。合軸必須在這之前切走。"""
+    if char.is_con_full():
+        return False
+    return char.get_current_con() <= _AXIS_CON
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -127,7 +143,7 @@ class Hsin(BaseChar):
         if not self.is_con_full():
             self.continues_normal_attack(4, until_con_full=True)
         # 下一輪要從千咲的變奏開始。其他隊伍沒有千咲時，這行不會改優先級。
-        set_prefer(self, 'Chisa')
+        set_prefer(self, 'Chisa', phase=PHASE_CHISA_OPEN)
         self.logger.debug(f'Hsin switch_next_char start: lib2_cast={self.lib2_cast_this_turn}')
         self.switch_next_char()
         self.logger.debug('Hsin switch_next_char end')
@@ -202,22 +218,17 @@ class Hsin(BaseChar):
         self.click()
 
     def _build_enhanced_step(self):
-        if self.enhanced_e_ready() or self.is_forte_full():
-            if not self.cast_enhanced_e():
-                self._press_enhanced_anyway()
-            self._set_stage('dominion')
-            return
-        if time.time() - self._stage_entered > 1.5:
-            self._press_enhanced_anyway()
+        # 普攻補到強化小招。圖示沒來也只按一次，然後立刻接統御普攻。
+        ready = self.enhanced_e_ready() or self.is_forte_full()
+        if ready or time.time() - self._stage_entered > 1.2:
+            self.logger.info('Hsin enhanced E: press')
+            self.send_resonance_key()
+            self.record_resonance_use()
+            self.finisher_e_sent = True
+            self.sleep(0.2)
             self._set_stage('dominion')
             return
         self.click()
-
-    def _press_enhanced_anyway(self):
-        self.logger.info('Hsin enhanced E: icon missed, press anyway')
-        self.send_resonance_key()
-        self.record_resonance_use()
-        self.sleep(0.4)
 
     def _dominion_step(self):
         if self.heavy_available() == 2:

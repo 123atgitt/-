@@ -5,11 +5,18 @@ from src.char.BaseChar import BaseChar, CharType, Elements, SwitchPriority
 # ELECTRO_LOOP_SHARED_BEGIN
 # 這一段在 Hsin.py、Chisa.py、Rover.py 必須逐字相同。
 # 三個角色不互相 import，只共用 task._hsin_electro_loop。
-# 每人打完自己的一套，協奏滿了才切給下一個人。
+# 合軸：千咲起手切雷主，雷主只放大招切回千咲，電鋸協奏一滿再切回雷主，雷主打完切心。
 LOOP_ATTR = '_hsin_electro_loop'
+
+PHASE_CHISA_OPEN = 'chisa_open'
+PHASE_ROVER_AXIS = 'rover_axis'
+PHASE_CHISA_SAW = 'chisa_saw'
+PHASE_ROVER_FINAL = 'rover_final'
+PHASE_HSIN = 'hsin'
 
 _ELECTRIC = 1
 _NON_ELECTRIC = (0, 2, 3, 4, 5)
+_AXIS_CON = 0.8
 
 
 def _chars(task):
@@ -46,7 +53,7 @@ def get_loop(char, create=True):
         return None
     loop = getattr(task, LOOP_ATTR, None)
     if loop is None and create:
-        loop = {'prefer': None}
+        loop = {'phase': PHASE_CHISA_OPEN, 'prefer': None}
         setattr(task, LOOP_ATTR, loop)
     return loop
 
@@ -55,7 +62,7 @@ def reset_loop(char):
     task = getattr(char, 'task', None)
     if task is None:
         return
-    setattr(task, LOOP_ATTR, {'prefer': None})
+    setattr(task, LOOP_ATTR, {'phase': PHASE_CHISA_OPEN, 'prefer': None})
 
 
 def consume_prefer(char):
@@ -64,11 +71,13 @@ def consume_prefer(char):
         loop['prefer'] = None
 
 
-def set_prefer(char, name):
+def set_prefer(char, name, phase=None):
     loop = get_loop(char, create=True)
     if loop is None:
         return None
     loop['prefer'] = name
+    if phase is not None:
+        loop['phase'] = phase
     return loop
 
 
@@ -77,6 +86,13 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+def axis_still_open(char):
+    """協奏超過 0.8 就會被當成真正的延奏。合軸必須在這之前切走。"""
+    if char.is_con_full():
+        return False
+    return char.get_current_con() <= _AXIS_CON
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -196,21 +212,54 @@ class Rover(BaseChar):
             self._perform_electric_routine_default()
             return
         consume_prefer(self)
+        phase = (get_loop(self) or {}).get('phase')
+        if phase == PHASE_ROVER_AXIS:
+            self._electric_axis()
+            return
+        self._electric_final(skip_liberation=False)
+
+    def _electric_axis(self):
+        """合軸只放大招，不按聲骸、不長按。大招把協奏灌滿就留在場上，電髓要給心。"""
+        self.wait_down(click=False)
+        if axis_still_open(self) and self.liberation_available():
+            self.click_liberation(click_f=False, wait_if_cd_ready=0)
+        if not axis_still_open(self):
+            self.logger.info('rover: axis liberation filled concerto, stay for the final set')
+            self._electric_final(skip_liberation=True)
+            return
+        self.logger.info('rover: axis liberation kept concerto open, return to chisa')
+        set_prefer(self, 'Chisa', phase=PHASE_CHISA_SAW)
+
+    def _electric_final(self, skip_liberation=False):
+        """最後進場：聲骸、短按強化小招，協奏滿了才切給心。"""
         self.wait_down(click=False)
         self.click_echo()
-        self.click_liberation(click_f=False)
+        if not skip_liberation:
+            self.click_liberation(click_f=False, wait_if_cd_ready=0)
         if self.resonance_available() and not self.electric_skill_ready():
-            if self.click_resonance(send_click=False, time_out=0.6)[0]:
-                self.sleep(0.1)
-        # 兩個圖示要同時亮才算就緒，常常因此整段跳過。短普攻後一定短按強化小招。
-        self.continues_normal_attack(1.5)
-        if not self.short_electric_skill():
-            self._press_enhanced_anyway()
+            self.click_resonance(send_click=False, time_out=0.45)
+        start = time.time()
+        while not self.electric_skill_ready() and time.time() - start < 1.2:
+            if self.is_con_full():
+                break
+            self.click()
+            self.sleep(0.1)
+        self._press_short_enhanced()
         if not self.is_con_full():
-            self.continues_normal_attack(5, until_con_full=True)
+            self.continues_normal_attack(4, until_con_full=True)
         if not self.is_con_full():
             self.logger.info('rover: set finished before concerto was full')
-        set_prefer(self, 'Hsin')
+        set_prefer(self, 'Hsin', phase=PHASE_HSIN)
+
+    def _press_short_enhanced(self):
+        """短按。長按會進臨界共鳴。圖示沒亮也按，最多等 1.2 秒，不空等兩輪。"""
+        self.send_resonance_key(down_time=0.05)
+        start = time.time()
+        self.task.wait_until(
+            lambda: time.time() - start >= 0.45
+            and not self.is_forte_full() and not self.is_e_forte_full(),
+            time_out=1.2, settle_time=0.05, pre_action=self.check_combat)
+        self.record_resonance_use()
 
     def _perform_electric_routine_default(self):
         self.wait_down(click=False)
@@ -253,13 +302,6 @@ class Rover(BaseChar):
                 return True
             self.logger.info(f'rover: electric enhanced resonance attempt {attempt + 1} not confirmed')
         return False
-
-    def _press_enhanced_anyway(self):
-        """圖示沒亮也短按一次，避免只剩普攻把協奏打滿。"""
-        self.logger.info('rover: enhanced icon missed, short press anyway')
-        self.send_resonance_key(down_time=0.05)
-        self.record_resonance_use()
-        self.sleep(1.2)
 
     def perform_spectro_routine(self):
         if self.has_intro:

@@ -36,8 +36,9 @@ class ElectroLoopTest(unittest.TestCase):
         for name in CHAR_FILES:
             text = (CHAR_DIR / name).read_text(encoding='utf-8')
             self.assertNotIn('src.char.hsin_electro_loop', text)
-            self.assertNotIn('PHASE_ROVER_AXIS', text)
             self.assertNotIn('leave_if_not_owner', text)
+            self.assertIn('PHASE_ROVER_AXIS', text)
+            self.assertIn('PHASE_CHISA_SAW', text)
 
     def test_unknown_or_electric_rover_counts_as_this_team(self):
         task, chars = self.team(-1)
@@ -73,10 +74,33 @@ class ElectroLoopTest(unittest.TestCase):
 
     def test_reset_clears_prefer(self):
         task, chars = self.team(1)
-        self.ns['set_prefer'](chars[0], 'Hsin')
+        self.ns['set_prefer'](chars[0], 'Hsin', phase=self.ns['PHASE_HSIN'])
         self.ns['reset_loop'](chars[2])
         self.assertIsNone(task._hsin_electro_loop['prefer'])
+        self.assertEqual(task._hsin_electro_loop['phase'], self.ns['PHASE_CHISA_OPEN'])
         self.assertFalse(self.ns['wants_must'](chars[0]))
+
+    def test_phase_follows_the_axis(self):
+        task, (hsin, chisa, rover) = self.team(1)
+        self.ns['set_prefer'](chisa, 'Rover', phase=self.ns['PHASE_ROVER_AXIS'])
+        self.assertEqual(task._hsin_electro_loop['phase'], 'rover_axis')
+        self.assertTrue(self.ns['wants_must'](rover))
+        self.assertTrue(self.ns['axis_still_open'](FakeCon(0.2)))
+        self.assertTrue(self.ns['axis_still_open'](FakeCon(0.8)))
+        self.assertFalse(self.ns['axis_still_open'](FakeCon(0.81)))
+        self.assertFalse(self.ns['axis_still_open'](FakeCon(1)))
+
+
+class FakeCon:
+    def __init__(self, value):
+        self.current_con = 0
+        self._value = value
+
+    def is_con_full(self):
+        return self._value >= 1
+
+    def get_current_con(self):
+        return self._value
 
 
 class Char:
