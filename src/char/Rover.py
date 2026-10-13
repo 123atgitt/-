@@ -101,6 +101,8 @@ class Rover(BaseChar):
         self._last_known_form = -1
         super().__init__(*args, **kwargs)
         self.use_skyfall_severance = False
+        self._enhanced_confirmed = False
+        self._switch_when_done = True
         self._bind_form_logger()
 
     def reset_state(self):
@@ -109,6 +111,8 @@ class Rover(BaseChar):
         self.ring_index = -1
         super().reset_state()
         self._bind_form_logger()
+        self._enhanced_confirmed = False
+        self._switch_when_done = True
         reset_loop(self)
 
     def get_switch_priority(self, current_char=None, has_intro=False, target_low_con=False):
@@ -152,6 +156,7 @@ class Rover(BaseChar):
             self._bind_form_logger()
 
     def do_perform(self):
+        self._switch_when_done = True
         self.init()
         if not self.has_intro:
             self.sleep(0.01)
@@ -174,6 +179,8 @@ class Rover(BaseChar):
         else:
             self.logger.info('rover: form-dispatch ring=UNKNOWN routine=basic')
             self.perform_basic_routine()
+        if not self._switch_when_done:
+            return
         if is_hsin_electro_team(self):
             ensure_combat(self)
         self.switch_next_char()
@@ -205,44 +212,88 @@ class Rover(BaseChar):
         if not is_hsin_electro_team(self):
             self._perform_electric_routine_default()
             return
+        self._switch_when_done = False
         consume_prefer(self)
-        self.wait_down(click=False)
-        self.click_echo()
-        self.click_liberation(click_f=False)
-        # 強化小招圖示亮了就不要先點普通小招，也不要繼續普攻把這下拖過去。
-        if not self._enhanced_prompt() and self.resonance_available():
-            if self.click_resonance(send_click=False, time_out=0.6)[0]:
-                self.sleep(0.1)
-        start = time.time()
-        while self.time_elapsed_accounting_for_freeze(start) < 4:
-            if self._enhanced_prompt():
-                break
-            self.click()
-            self.sleep(0.1)
-            ensure_combat(self)
-        self._press_short_enhanced()
-        ensure_combat(self)
-        if not self.is_con_full():
+        if not self._enhanced_confirmed:
+            self.wait_down(click=False)
+            self.click_echo()
             self.click_liberation(click_f=False)
-        ensure_combat(self)
-        if not self.is_con_full():
-            self.continues_normal_attack(4, until_con_full=True)
-        if not self.is_con_full():
-            self.logger.info('rover: set finished before concerto was full')
+            # 強化小招已經亮就不要先點普通小招。
+            if not self._enhanced_prompt() and self.resonance_available():
+                if self.click_resonance(send_click=False, time_out=0.6)[0]:
+                    self.sleep(0.1)
+            if not self._cast_enhanced_confirmed():
+                self.logger.info('rover: enhanced skill not confirmed, do not switch')
+                return
+        if not self._fill_concerto():
+            self.logger.info('rover: concerto not full, do not switch')
+            return
+        self._enhanced_confirmed = False
+        self._switch_when_done = True
         set_prefer(self, 'Hsin')
 
     def _enhanced_prompt(self):
         # 畫面上的強化小招圖示即可。白條回路常常對不上，不能拿來擋這一下。
         return bool(self.is_e_forte_full()) or self.is_forte_full()
 
-    def _press_short_enhanced(self):
-        """圖示亮了立刻短按。長按會進臨界共鳴。"""
-        self.send_resonance_key(down_time=0.05)
-        self.record_resonance_use()
-        self.sleep(0.12, check_combat=False)
-        if self.is_e_forte_full():
-            self.send_resonance_key(down_time=0.05)
-            self.record_resonance_use()
+    def _cast_enhanced_confirmed(self):
+        """圖示一亮就短按。圖示消失才算施放成功，否則再按。長按會進臨界共鳴。"""
+        deadline = time.time() + 6
+        while time.time() < deadline:
+            if self._enhanced_prompt():
+                self.send_resonance_key(down_time=0.05)
+                self.record_resonance_use()
+                if self._confirm_enhanced_cast():
+                    self._enhanced_confirmed = True
+                    self.logger.info('rover: enhanced skill confirmed')
+                    return True
+                self.logger.info('rover: enhanced icon still lit, press again')
+                continue
+            ensure_combat(self)
+            self.click()
+            self.sleep(0.08)
+        return False
+
+    def _confirm_enhanced_cast(self):
+        """按下之後看圖示。一直亮著代表沒打出去。"""
+        start = time.time()
+        gone_since = None
+        while time.time() - start < 1.35:
+            self.sleep(0.05)
+            if self._enhanced_prompt():
+                gone_since = None
+                continue
+            now = time.time()
+            if gone_since is None:
+                gone_since = now
+            elif now - gone_since >= 0.15 and now - start >= 0.35:
+                return True
+        return not self._enhanced_prompt()
+
+    def _concerto_is_full(self):
+        # current_con 一旦被記成 1 就不會再讀畫面，換人前要看現在的協奏。
+        self.current_con = 0
+        if self.is_con_full():
+            self.current_con = 1
+            return True
+        try:
+            value = float(self.task.get_current_con())
+        except (TypeError, ValueError):
+            return False
+        if value >= 1:
+            self.current_con = 1
+            return True
+        return False
+
+    def _fill_concerto(self):
+        start = time.time()
+        while time.time() - start < 12:
+            ensure_combat(self)
+            if self._concerto_is_full():
+                return True
+            self.click()
+            self.sleep(0.1)
+        return self._concerto_is_full()
 
     def _perform_electric_routine_default(self):
         self.wait_down(click=False)
