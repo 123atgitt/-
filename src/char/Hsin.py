@@ -6,13 +6,8 @@ from src.char.BaseChar import BaseChar, SwitchPriority
 # ELECTRO_LOOP_SHARED_BEGIN
 # 這一段在 Hsin.py、Chisa.py、Rover.py 必須逐字相同。
 # 三個角色不互相 import，只共用 task._hsin_electro_loop。
+# 每人打完自己的一套，協奏滿了才切給下一個人。
 LOOP_ATTR = '_hsin_electro_loop'
-
-PHASE_CHISA_OPEN = 'chisa_open'
-PHASE_ROVER_AXIS = 'rover_axis'
-PHASE_CHISA_SAW = 'chisa_saw'
-PHASE_ROVER_FINAL = 'rover_final'
-PHASE_HSIN = 'hsin'
 
 _ELECTRIC = 1
 _NON_ELECTRIC = (0, 2, 3, 4, 5)
@@ -52,7 +47,7 @@ def get_loop(char, create=True):
         return None
     loop = getattr(task, LOOP_ATTR, None)
     if loop is None and create:
-        loop = {'phase': PHASE_CHISA_OPEN, 'prefer': None}
+        loop = {'prefer': None}
         setattr(task, LOOP_ATTR, loop)
     return loop
 
@@ -61,7 +56,7 @@ def reset_loop(char):
     task = getattr(char, 'task', None)
     if task is None:
         return
-    setattr(task, LOOP_ATTR, {'phase': PHASE_CHISA_OPEN, 'prefer': None})
+    setattr(task, LOOP_ATTR, {'prefer': None})
 
 
 def consume_prefer(char):
@@ -70,13 +65,11 @@ def consume_prefer(char):
         loop['prefer'] = None
 
 
-def set_prefer(char, name, phase=None):
+def set_prefer(char, name):
     loop = get_loop(char, create=True)
     if loop is None:
         return None
     loop['prefer'] = name
-    if phase is not None:
-        loop['phase'] = phase
     return loop
 
 
@@ -85,35 +78,8 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
-
-
-_PHASE_OWNER = {
-    PHASE_CHISA_OPEN: 'Chisa',
-    PHASE_CHISA_SAW: 'Chisa',
-    PHASE_ROVER_AXIS: 'Rover',
-    PHASE_ROVER_FINAL: 'Rover',
-    PHASE_HSIN: 'Hsin',
-}
-
-
-def leave_if_not_owner(char):
-    """上場的人不是這一步的主人時，立刻把場交回去。連跳兩次仍交不出去就停下。"""
-    loop = get_loop(char)
-    if loop is None:
-        return False
-    owner = _PHASE_OWNER.get(loop.get('phase'))
-    if owner is None or owner == char.name:
-        loop['bounces'] = 0
-        return False
-    bounces = loop.get('bounces', 0)
-    if bounces >= 2:
-        return False
-    loop['bounces'] = bounces + 1
-    char.logger.info(f'{char.name}: step {loop.get("phase")} belongs to {owner}')
-    set_prefer(char, owner)
-    char.switch_next_char()
-    return True
 # ELECTRO_LOOP_SHARED_END
+
 
 
 class Hsin(BaseChar):
@@ -152,8 +118,6 @@ class Hsin(BaseChar):
         self._echo_used = False
         self._stage = 'open'
         self._stage_entered = time.time()
-        if is_hsin_electro_team(self) and leave_if_not_owner(self):
-            return
         consume_prefer(self)
         self.logger.debug(f'Hsin perform start: has_intro={self.has_intro}')
         try:
@@ -163,7 +127,7 @@ class Hsin(BaseChar):
         if not self.is_con_full():
             self.continues_normal_attack(4, until_con_full=True)
         # 下一輪要從千咲的變奏開始。其他隊伍沒有千咲時，這行不會改優先級。
-        set_prefer(self, 'Chisa', phase=PHASE_CHISA_OPEN)
+        set_prefer(self, 'Chisa')
         self.logger.debug(f'Hsin switch_next_char start: lib2_cast={self.lib2_cast_this_turn}')
         self.switch_next_char()
         self.logger.debug('Hsin switch_next_char end')

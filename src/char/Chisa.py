@@ -5,13 +5,8 @@ from src.char.BaseChar import BaseChar, CharType, SwitchPriority, get_default_bu
 # ELECTRO_LOOP_SHARED_BEGIN
 # 這一段在 Hsin.py、Chisa.py、Rover.py 必須逐字相同。
 # 三個角色不互相 import，只共用 task._hsin_electro_loop。
+# 每人打完自己的一套，協奏滿了才切給下一個人。
 LOOP_ATTR = '_hsin_electro_loop'
-
-PHASE_CHISA_OPEN = 'chisa_open'
-PHASE_ROVER_AXIS = 'rover_axis'
-PHASE_CHISA_SAW = 'chisa_saw'
-PHASE_ROVER_FINAL = 'rover_final'
-PHASE_HSIN = 'hsin'
 
 _ELECTRIC = 1
 _NON_ELECTRIC = (0, 2, 3, 4, 5)
@@ -51,7 +46,7 @@ def get_loop(char, create=True):
         return None
     loop = getattr(task, LOOP_ATTR, None)
     if loop is None and create:
-        loop = {'phase': PHASE_CHISA_OPEN, 'prefer': None}
+        loop = {'prefer': None}
         setattr(task, LOOP_ATTR, loop)
     return loop
 
@@ -60,7 +55,7 @@ def reset_loop(char):
     task = getattr(char, 'task', None)
     if task is None:
         return
-    setattr(task, LOOP_ATTR, {'phase': PHASE_CHISA_OPEN, 'prefer': None})
+    setattr(task, LOOP_ATTR, {'prefer': None})
 
 
 def consume_prefer(char):
@@ -69,13 +64,11 @@ def consume_prefer(char):
         loop['prefer'] = None
 
 
-def set_prefer(char, name, phase=None):
+def set_prefer(char, name):
     loop = get_loop(char, create=True)
     if loop is None:
         return None
     loop['prefer'] = name
-    if phase is not None:
-        loop['phase'] = phase
     return loop
 
 
@@ -84,35 +77,8 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
-
-
-_PHASE_OWNER = {
-    PHASE_CHISA_OPEN: 'Chisa',
-    PHASE_CHISA_SAW: 'Chisa',
-    PHASE_ROVER_AXIS: 'Rover',
-    PHASE_ROVER_FINAL: 'Rover',
-    PHASE_HSIN: 'Hsin',
-}
-
-
-def leave_if_not_owner(char):
-    """上場的人不是這一步的主人時，立刻把場交回去。連跳兩次仍交不出去就停下。"""
-    loop = get_loop(char)
-    if loop is None:
-        return False
-    owner = _PHASE_OWNER.get(loop.get('phase'))
-    if owner is None or owner == char.name:
-        loop['bounces'] = 0
-        return False
-    bounces = loop.get('bounces', 0)
-    if bounces >= 2:
-        return False
-    loop['bounces'] = bounces + 1
-    char.logger.info(f'{char.name}: step {loop.get("phase")} belongs to {owner}')
-    set_prefer(char, owner)
-    char.switch_next_char()
-    return True
 # ELECTRO_LOOP_SHARED_END
+
 
 
 class Chisa(BaseChar):
@@ -138,7 +104,7 @@ class Chisa(BaseChar):
         reset_loop(self)
 
     def healer_full_con_switch_locked(self):
-        # 千咲在工廠裡是治療。滿協奏切走後程式會鎖 16 秒不准回來，合軸和下一輪都會斷。
+        # 千咲在工廠裡是治療。滿協奏切走後程式會鎖 16 秒，下一輪就切不回她。
         if is_hsin_electro_team(self):
             return False
         return super().healer_full_con_switch_locked()
@@ -155,25 +121,12 @@ class Chisa(BaseChar):
         if self.is_dps_config():
             return self.do_dps_perform()
         if is_hsin_electro_team(self):
-            if leave_if_not_owner(self):
-                return
             return self.do_electro_support()
         return self.do_support_perform()
 
     def do_electro_support(self):
-        """心月狐隊：聲骸、大招、小招，強化小招起手合軸，回來後電鋸協奏一滿就切。"""
+        """一套打完：聲骸、大招、小招、強化小招、電鋸。協奏滿了才切雷主。"""
         consume_prefer(self)
-        phase = (get_loop(self) or {}).get('phase')
-        if phase == PHASE_CHISA_SAW:
-            return self._electro_saw_outro()
-        return self._electro_opener()
-
-    def _con_value(self):
-        if self.is_con_full():
-            return 1.0
-        return self.get_current_con()
-
-    def _electro_opener(self):
         if self.has_intro:
             self.wait_intro(time_out=0.6, click=False)
         elif self.flying():
@@ -186,69 +139,14 @@ class Chisa(BaseChar):
         while not self.is_forte_full() and time.time() - start < 4:
             self.click()
             self.sleep(0.1)
-        # 進電鋸前協奏已經滿：合軸不成立，但電鋸仍要打完，延奏的 15 秒才從結尾起算。
-        if self._con_value() > 0.8:
-            self.logger.info('chisa: concerto already high, finish saw then outro')
-            if self.is_forte_full():
-                self.perform_forte()
-            return self._outro_to_rover()
         if self.is_forte_full():
-            started = self._start_chainsaw()
-            if started == 'started' and self._con_value() <= 0.8:
-                self.logger.info('chisa: chainsaw started below full concerto, axis into rover')
-                set_prefer(self, 'Rover', phase=PHASE_ROVER_AXIS)
-                return self.switch_next_char()
-            if self._con_value() > 0.8:
-                self.logger.info('chisa: chainsaw filled concerto, outro without returning later')
-                return self._outro_to_rover()
-        self.logger.info('chisa: chainsaw did not start, build concerto then outro')
-        if not self._hold_attack_until_con_full(4.5):
-            self.continues_normal_attack(3, until_con_full=True)
-        return self._outro_to_rover()
-
-    def _electro_saw_outro(self):
-        """合軸切回來。背景電鋸若已把協奏灌滿，立刻延奏，不等落地。"""
-        if not (self.is_con_full() or self._con_value() > 0.8):
-            if not self._hold_attack_until_con_full(4.5):
-                self.continues_normal_attack(3, until_con_full=True)
-        return self._outro_to_rover()
-
-    def _outro_to_rover(self):
-        if not (self.is_con_full() or self._con_value() > 0.8):
-            self.logger.info('chisa: leaving before concerto is full')
-        set_prefer(self, 'Rover', phase=PHASE_ROVER_FINAL)
+            self.perform_forte()
+        if not self.is_con_full():
+            self.continues_normal_attack(5, until_con_full=True)
+        if not self.is_con_full():
+            self.logger.info('chisa: set finished before concerto was full')
+        set_prefer(self, 'Rover')
         return self.switch_next_char()
-
-    def _start_chainsaw(self):
-        """用和原本電鋸相同的按住小招。按完回路掉了、協奏還沒收滿，才是合軸。"""
-        if self.flying():
-            self.wait_down()
-        if self._con_value() > 0.8:
-            return 'full'
-        self.task.send_key(self.get_resonance_key(), down_time=1.2)
-        self.sleep(0.05)
-        if self._con_value() > 0.8:
-            return 'full'
-        if not self.is_forte_full():
-            return 'started'
-        return 'failed'
-
-    def _hold_attack_until_con_full(self, timeout):
-        """電鋸強化普攻。協奏一滿就鬆開，不等落地。"""
-        if self.flying():
-            self.wait_down()
-        self.task.mouse_down()
-        start = time.time()
-        try:
-            while time.time() - start < timeout:
-                self.check_combat()
-                if self.is_con_full() or self._con_value() > 0.8:
-                    return True
-                self.task.next_frame()
-                self.sleep(0.05, check_combat=False)
-        finally:
-            self.task.mouse_up()
-        return self.is_con_full() or self._con_value() > 0.8
 
     def do_support_perform(self):
         needs_long_actions = self.has_intro and not self.has_buff()

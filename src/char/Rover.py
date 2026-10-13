@@ -5,13 +5,8 @@ from src.char.BaseChar import BaseChar, CharType, Elements, SwitchPriority
 # ELECTRO_LOOP_SHARED_BEGIN
 # 這一段在 Hsin.py、Chisa.py、Rover.py 必須逐字相同。
 # 三個角色不互相 import，只共用 task._hsin_electro_loop。
+# 每人打完自己的一套，協奏滿了才切給下一個人。
 LOOP_ATTR = '_hsin_electro_loop'
-
-PHASE_CHISA_OPEN = 'chisa_open'
-PHASE_ROVER_AXIS = 'rover_axis'
-PHASE_CHISA_SAW = 'chisa_saw'
-PHASE_ROVER_FINAL = 'rover_final'
-PHASE_HSIN = 'hsin'
 
 _ELECTRIC = 1
 _NON_ELECTRIC = (0, 2, 3, 4, 5)
@@ -51,7 +46,7 @@ def get_loop(char, create=True):
         return None
     loop = getattr(task, LOOP_ATTR, None)
     if loop is None and create:
-        loop = {'phase': PHASE_CHISA_OPEN, 'prefer': None}
+        loop = {'prefer': None}
         setattr(task, LOOP_ATTR, loop)
     return loop
 
@@ -60,7 +55,7 @@ def reset_loop(char):
     task = getattr(char, 'task', None)
     if task is None:
         return
-    setattr(task, LOOP_ATTR, {'phase': PHASE_CHISA_OPEN, 'prefer': None})
+    setattr(task, LOOP_ATTR, {'prefer': None})
 
 
 def consume_prefer(char):
@@ -69,13 +64,11 @@ def consume_prefer(char):
         loop['prefer'] = None
 
 
-def set_prefer(char, name, phase=None):
+def set_prefer(char, name):
     loop = get_loop(char, create=True)
     if loop is None:
         return None
     loop['prefer'] = name
-    if phase is not None:
-        loop['phase'] = phase
     return loop
 
 
@@ -84,35 +77,8 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
-
-
-_PHASE_OWNER = {
-    PHASE_CHISA_OPEN: 'Chisa',
-    PHASE_CHISA_SAW: 'Chisa',
-    PHASE_ROVER_AXIS: 'Rover',
-    PHASE_ROVER_FINAL: 'Rover',
-    PHASE_HSIN: 'Hsin',
-}
-
-
-def leave_if_not_owner(char):
-    """上場的人不是這一步的主人時，立刻把場交回去。連跳兩次仍交不出去就停下。"""
-    loop = get_loop(char)
-    if loop is None:
-        return False
-    owner = _PHASE_OWNER.get(loop.get('phase'))
-    if owner is None or owner == char.name:
-        loop['bounces'] = 0
-        return False
-    bounces = loop.get('bounces', 0)
-    if bounces >= 2:
-        return False
-    loop['bounces'] = bounces + 1
-    char.logger.info(f'{char.name}: step {loop.get("phase")} belongs to {owner}')
-    set_prefer(char, owner)
-    char.switch_next_char()
-    return True
 # ELECTRO_LOOP_SHARED_END
+
 
 _ROVER_FORM_NAMES = {
     Elements.SPECTRO: 'Rover: Spectro',
@@ -181,11 +147,6 @@ class Rover(BaseChar):
         self.init()
         if not self.has_intro:
             self.sleep(0.01)
-        if self.ring_index == Elements.ELECTRIC and is_hsin_electro_team(self):
-            phase = (get_loop(self) or {}).get('phase')
-            if phase not in (PHASE_ROVER_AXIS, PHASE_ROVER_FINAL) and self._con_value() <= 0.8:
-                if leave_if_not_owner(self):
-                    return
         if self.ring_index == Elements.HAVOC:
             self.intro_motion_freeze_duration = 0.64
             self.logger.info('rover: form-dispatch ring=HAVOC routine=havoc')
@@ -235,41 +196,9 @@ class Rover(BaseChar):
             self._perform_electric_routine_default()
             return
         consume_prefer(self)
-        phase = (get_loop(self) or {}).get('phase')
-        if phase == PHASE_ROVER_AXIS:
-            self._electric_axis()
-        elif phase == PHASE_ROVER_FINAL:
-            self._electric_final()
-        elif self._con_value() > 0.8:
-            self.logger.info('rover: entered with concerto almost full, use final visit')
-            self._electric_final()
-        else:
-            self.logger.info('rover: hand off to chisa without spending liberation or echo')
-            set_prefer(self, 'Chisa', phase=PHASE_CHISA_OPEN)
-
-    def _con_value(self):
-        if self.is_con_full():
-            return 1.0
-        return self.get_current_con()
-
-    def _electric_axis(self):
-        """合軸只放大招。協奏被大招灌滿時不能切回千咲，否則電髓會給錯人。"""
-        self.wait_down(click=False)
-        if self._con_value() <= 0.8 and self.liberation_available():
-            self.click_liberation(click_f=False)
-        if self.is_con_full() or self._con_value() > 0.8:
-            self.logger.info('rover: axis liberation filled concerto, fold into final visit')
-            self._electric_final(skip_liberation=True)
-            return
-        self.logger.info('rover: axis liberation kept concerto open, return to chisa')
-        set_prefer(self, 'Chisa', phase=PHASE_CHISA_SAW)
-
-    def _electric_final(self, skip_liberation=False):
-        """最後一次進場：聲骸、短按強化小招，協奏滿了才切給心月狐。"""
         self.wait_down(click=False)
         self.click_echo()
-        if not skip_liberation:
-            self.click_liberation(click_f=False)
+        self.click_liberation(click_f=False)
         if not self.electric_skill_ready() and self.resonance_available():
             if self.click_resonance(send_click=False, time_out=1)[0]:
                 self.sleep(0.1)
@@ -281,12 +210,12 @@ class Rover(BaseChar):
             if not self.short_electric_skill():
                 self.logger.info('rover: electric enhanced resonance not confirmed')
         else:
-            self.logger.info('rover: electric forte not ready before final visit timeout')
+            self.logger.info('rover: electric forte not ready before concerto gate')
         if not self.is_con_full():
-            self.continues_normal_attack(4, until_con_full=True)
+            self.continues_normal_attack(5, until_con_full=True)
         if not self.is_con_full():
-            self.logger.info('rover: final visit ended before concerto was full')
-        set_prefer(self, 'Hsin', phase=PHASE_HSIN)
+            self.logger.info('rover: set finished before concerto was full')
+        set_prefer(self, 'Hsin')
 
     def _perform_electric_routine_default(self):
         self.wait_down(click=False)
