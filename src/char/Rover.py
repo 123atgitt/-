@@ -77,6 +77,14 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+def ensure_combat(char):
+    """先換新畫面再檢查。王死了會從這裡停，不會接著打空氣。"""
+    task = getattr(char, 'task', None)
+    if task is not None and hasattr(task, 'next_frame'):
+        task.next_frame()
+    char.check_combat()
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -166,6 +174,8 @@ class Rover(BaseChar):
         else:
             self.logger.info('rover: form-dispatch ring=UNKNOWN routine=basic')
             self.perform_basic_routine()
+        if is_hsin_electro_team(self):
+            ensure_combat(self)
         self.switch_next_char()
 
     def init(self):
@@ -204,6 +214,7 @@ class Rover(BaseChar):
                 self.sleep(0.1)
         start = time.time()
         while not self.electric_skill_ready() and self.time_elapsed_accounting_for_freeze(start) < 4:
+            ensure_combat(self)
             self.click()
             self.sleep(0.1)
         if self.electric_skill_ready():
@@ -212,8 +223,10 @@ class Rover(BaseChar):
         else:
             self.logger.info('rover: enhanced icon missed, short press once')
             self._example_short_press()
+        ensure_combat(self)
         if not self.is_con_full():
             self.click_liberation(click_f=False)
+        ensure_combat(self)
         if not self.is_con_full():
             self.continues_normal_attack(4, until_con_full=True)
         if not self.is_con_full():

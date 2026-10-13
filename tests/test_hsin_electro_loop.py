@@ -72,6 +72,33 @@ class ElectroLoopTest(unittest.TestCase):
         self.assertFalse(self.ns['wants_must'](chars[1]))
         self.assertIsNone(self.ns['get_loop'](chars[0]))
 
+    def test_ensure_combat_refreshes_the_frame_then_checks(self):
+        class Fighting:
+            def __init__(self):
+                self.frames = 0
+                self.checks = 0
+
+            def next_frame(self):
+                self.frames += 1
+
+            def check_combat(self):
+                self.checks += 1
+
+        char = type('C', (), {})()
+        char.task = Fighting()
+        char.check_combat = char.task.check_combat
+        self.ns['ensure_combat'](char)
+        self.assertEqual(char.task.frames, 1)
+        self.assertEqual(char.task.checks, 1)
+
+        def ended():
+            raise RuntimeError('out of combat')
+
+        char.check_combat = ended
+        char.task.check_combat = ended
+        with self.assertRaises(RuntimeError):
+            self.ns['ensure_combat'](char)
+
     def test_reset_clears_prefer(self):
         task, chars = self.team(1)
         self.ns['set_prefer'](chars[0], 'Hsin')

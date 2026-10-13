@@ -78,6 +78,14 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+def ensure_combat(char):
+    """先換新畫面再檢查。王死了會從這裡停，不會接著打空氣。"""
+    task = getattr(char, 'task', None)
+    if task is not None and hasattr(task, 'next_frame'):
+        task.next_frame()
+    char.check_combat()
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -124,8 +132,10 @@ class Hsin(BaseChar):
             self.perform_everything()
         finally:
             self.h2_guard_until = 0.0
+        ensure_combat(self)
         if not self.is_con_full():
             self.continues_normal_attack(4, until_con_full=True)
+        ensure_combat(self)
         # 下一輪要從千咲的變奏開始。其他隊伍沒有千咲時，這行不會改優先級。
         set_prefer(self, 'Chisa')
         self.logger.debug(f'Hsin switch_next_char start: lib2_cast={self.lib2_cast_this_turn}')
@@ -147,6 +157,7 @@ class Hsin(BaseChar):
         while not self._rotation_timed_out(start):
             if self._stage == 'done':
                 return
+            ensure_combat(self)
             self.cycle_start()
             finished = False
             if self._stage == 'open':

@@ -77,6 +77,14 @@ def wants_must(char):
         return False
     loop = getattr(getattr(char, 'task', None), LOOP_ATTR, None)
     return bool(loop and loop.get('prefer') == char.name)
+
+
+def ensure_combat(char):
+    """先換新畫面再檢查。王死了會從這裡停，不會接著打空氣。"""
+    task = getattr(char, 'task', None)
+    if task is not None and hasattr(task, 'next_frame'):
+        task.next_frame()
+    char.check_combat()
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -136,6 +144,7 @@ class Chisa(BaseChar):
         saw_done = False
         start = time.time()
         while self.time_elapsed_accounting_for_freeze(start) < 8:
+            ensure_combat(self)
             self.cycle_start()
             if saw_done and self.is_con_full():
                 break
@@ -150,6 +159,7 @@ class Chisa(BaseChar):
                 self.click()
             self.cycle_sleep()
 
+        ensure_combat(self)
         if not saw_done:
             self.logger.info('chisa: hold enhanced skill before swap')
             was_ready = self._enhanced_ready()
@@ -159,8 +169,10 @@ class Chisa(BaseChar):
             # perform_forte 的判斷：按完回路還亮著，代表沒進電鋸，不接重擊。
             if was_ready and not self.is_forte_full():
                 self.heavy_attack(3.5)
+        ensure_combat(self)
         if not self.is_con_full():
             self.continues_normal_attack(4, until_con_full=True)
+        ensure_combat(self)
         if not self.is_con_full():
             self.logger.info('chisa: set finished before concerto was full')
         set_prefer(self, 'Rover')
