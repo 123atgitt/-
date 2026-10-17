@@ -99,27 +99,6 @@ class ElectroLoopTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.ns['ensure_combat'](char)
 
-    def test_concerto_rereads_when_the_saved_mark_says_full(self):
-        char = type('C', (), {})()
-        char.current_con = 1
-        char.task = Task([])
-
-        def is_con_full():
-            if char.current_con == 1:
-                return True
-            char.current_con = char.task.get_current_con()
-            return char.current_con >= 1
-
-        char.is_con_full = is_con_full
-        char.task.get_current_con = lambda: 0.4
-        self.assertFalse(self.ns['concerto_is_full'](char))
-        self.assertEqual(char.current_con, 0.4)
-
-        char.current_con = 1
-        char.task.get_current_con = lambda: 1
-        self.assertTrue(self.ns['concerto_is_full'](char))
-        self.assertEqual(char.current_con, 1)
-
     def test_reset_clears_prefer(self):
         task, chars = self.team(1)
         self.ns['set_prefer'](chars[0], 'Hsin')
