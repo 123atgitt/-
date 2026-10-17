@@ -86,6 +86,25 @@ def ensure_combat(char):
     if task is not None and hasattr(task, 'next_frame'):
         task.next_frame()
     char.check_combat()
+
+
+def concerto_is_full(char):
+    """current_con 記成滿了就不再讀畫面。換人前把舊記號清掉再看。"""
+    char.current_con = 0
+    if char.is_con_full():
+        char.current_con = 1
+        return True
+    task = getattr(char, 'task', None)
+    if task is None or not hasattr(task, 'get_current_con'):
+        return False
+    try:
+        value = float(task.get_current_con())
+    except (TypeError, ValueError):
+        return False
+    if value >= 1:
+        char.current_con = 1
+        return True
+    return False
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -102,6 +121,7 @@ class Hsin(BaseChar):
     def reset_state(self):
         super().reset_state()
         reset_loop(self)
+        self._hold_field = False
 
     def get_switch_priority(self, current_char=None, has_intro=False, target_low_con=False):
         if wants_must(self):
@@ -118,29 +138,67 @@ class Hsin(BaseChar):
         return self.h2_guard_until > 0
 
     def do_perform(self):
-        self.lib2_cast_this_turn = False
-        self.finisher_start = None
-        self.finisher_e_sent = False
-        self.h2_completed = False
-        self.h2_guard_until = 0.0
-        self._echo_used = False
-        self._stage = 'open'
-        self._stage_entered = time.time()
+        holding = getattr(self, '_hold_field', False)
+        self._hold_field = False
+        if not holding:
+            self.lib2_cast_this_turn = False
+            self.finisher_start = None
+            self.finisher_e_sent = False
+            self.h2_completed = False
+            self.h2_guard_until = 0.0
+            self._echo_used = False
+            self._stage = 'open'
+            self._stage_entered = time.time()
         consume_prefer(self)
-        self.logger.debug(f'Hsin perform start: has_intro={self.has_intro}')
+        self.logger.debug(f'Hsin perform start: has_intro={self.has_intro} hold={holding}')
         try:
-            self.perform_everything()
+            if self._stage != 'done':
+                self.perform_everything()
         finally:
             self.h2_guard_until = 0.0
+        self._leave_when_ready()
+
+    def _leave_when_ready(self):
+        """強化重擊之後能量不夠就普攻。大招打出、協奏重讀滿了才切千咲。"""
         ensure_combat(self)
-        if not self.is_con_full():
-            self.continues_normal_attack(4, until_con_full=True)
-        ensure_combat(self)
+        if self.h2_completed and not self.lib2_cast_this_turn:
+            self.logger.info('Hsin: enhanced heavy done, basic until liberation energy is full')
+            self._basic_until(12, self._try_finisher_ult)
+        if self.h2_completed and not self.lib2_cast_this_turn:
+            self._hold_field = True
+            self._stage = 'done'
+            self.logger.info('Hsin: liberation not ready, do not switch')
+            return
+        if not concerto_is_full(self):
+            self.logger.info('Hsin: concerto not full, basic')
+            self._basic_until(10, lambda: concerto_is_full(self))
+        if not concerto_is_full(self):
+            self._hold_field = True
+            self._stage = 'done'
+            self.logger.info('Hsin: concerto not full, do not switch')
+            return
+        self._hold_field = False
         # 下一輪要從千咲的變奏開始。其他隊伍沒有千咲時，這行不會改優先級。
         set_prefer(self, 'Chisa')
         self.logger.debug(f'Hsin switch_next_char start: lib2_cast={self.lib2_cast_this_turn}')
         self.switch_next_char()
         self.logger.debug('Hsin switch_next_char end')
+
+    def _try_finisher_ult(self):
+        if not self.liberation_available():
+            return False
+        return self._cast_marked_liberation(lib2=True)
+
+    def _basic_until(self, seconds, done):
+        start = time.time()
+        while self.time_elapsed_accounting_for_freeze(start) < seconds:
+            ensure_combat(self)
+            if done():
+                return True
+            self.click()
+            self.sleep(0.08)
+        ensure_combat(self)
+        return bool(done())
 
     def _set_stage(self, stage):
         self._stage = stage
@@ -345,10 +403,11 @@ class Hsin(BaseChar):
             self.logger.debug('Hsin heavy end: unavailable')
             return False
         # An already-started hold gets its full window, even near the rotation deadline.
+        # 強化重擊一按下去，這輪就必須等能量補滿再放大招，不能按完就換人。
+        if heavy_type == 2:
+            self.h2_completed = True
         confirmed = self.heavy_wait_highlight_down(1.2, protect_animation=heavy_type == 2)
         self.logger.debug(f'Hsin heavy: type={heavy_type}, confirmed={confirmed}')
-        if confirmed and heavy_type == 2:
-            self.h2_completed = True
         return confirmed
 
     def wait_for_lib2(self, after_heavy: bool = False) -> bool:

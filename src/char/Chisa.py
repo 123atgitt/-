@@ -85,6 +85,25 @@ def ensure_combat(char):
     if task is not None and hasattr(task, 'next_frame'):
         task.next_frame()
     char.check_combat()
+
+
+def concerto_is_full(char):
+    """current_con 記成滿了就不再讀畫面。換人前把舊記號清掉再看。"""
+    char.current_con = 0
+    if char.is_con_full():
+        char.current_con = 1
+        return True
+    task = getattr(char, 'task', None)
+    if task is None or not hasattr(task, 'get_current_con'):
+        return False
+    try:
+        value = float(task.get_current_con())
+    except (TypeError, ValueError):
+        return False
+    if value >= 1:
+        char.current_con = 1
+        return True
+    return False
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -110,6 +129,8 @@ class Chisa(BaseChar):
     def reset_state(self):
         super().reset_state()
         reset_loop(self)
+        self._hold_field = False
+        self._saw_done = False
 
     def healer_full_con_switch_locked(self):
         # 千咲在工廠裡是治療。滿協奏切走後程式會鎖 16 秒，下一輪就切不回她。
@@ -133,34 +154,45 @@ class Chisa(BaseChar):
         return self.do_support_perform()
 
     def do_electro_support(self):
-        """跟原本輔助迴圈一樣邊打邊放。電鋸打完、協奏滿了才切雷主。"""
+        """能量或協奏不夠就普攻。重新讀到協奏滿了才切雷主。"""
+        holding = getattr(self, '_hold_field', False)
+        self._hold_field = False
         consume_prefer(self)
-        if self.has_intro:
-            self.continues_normal_attack(0.8)
-        if self.flying() and not self.liberation_available() and not self.resonance_available():
-            self.wait_down()
-        self.click_echo(time_out=0)
+        if not holding:
+            self._saw_done = False
+            if self.has_intro:
+                self.continues_normal_attack(0.8)
+            if self.flying() and not self.liberation_available() and not self.resonance_available():
+                self.wait_down()
+            self.click_echo(time_out=0)
+        if not self._finish_electro_support():
+            self._hold_field = True
+            self.logger.info('chisa: concerto not full, do not switch')
+            return
+        self._saw_done = False
+        set_prefer(self, 'Rover')
+        return self.switch_next_char()
 
-        saw_done = False
+    def _finish_electro_support(self):
         start = time.time()
-        while self.time_elapsed_accounting_for_freeze(start) < 8:
+        while self.time_elapsed_accounting_for_freeze(start) < 16:
             ensure_combat(self)
             self.cycle_start()
-            if saw_done and self.is_con_full():
-                break
+            if self._saw_done and concerto_is_full(self):
+                return True
             if self.liberation_available():
                 self.click_liberation(wait_if_cd_ready=0)
-            elif not saw_done and self._enhanced_ready():
+            elif not self._saw_done and self._enhanced_ready():
                 if self.perform_forte():
-                    saw_done = True
-            elif not saw_done and self.resonance_available() and self.click_resonance(time_out=0)[0]:
+                    self._saw_done = True
+            elif not self._saw_done and self.resonance_available() and self.click_resonance(time_out=0)[0]:
                 pass
             else:
                 self.click()
             self.cycle_sleep()
 
         ensure_combat(self)
-        if not saw_done:
+        if not self._saw_done:
             self.logger.info('chisa: hold enhanced skill before swap')
             was_ready = self._enhanced_ready()
             if self.flying():
@@ -169,14 +201,29 @@ class Chisa(BaseChar):
             # perform_forte 的判斷：按完回路還亮著，代表沒進電鋸，不接重擊。
             if was_ready and not self.is_forte_full():
                 self.heavy_attack(3.5)
+                self._saw_done = True
+        if not concerto_is_full(self):
+            self.logger.info('chisa: basic until concerto is full')
+            self._basic_until(10, self._ult_then_concerto_full)
+        return concerto_is_full(self)
+
+    def _ult_then_concerto_full(self):
+        if concerto_is_full(self):
+            return True
+        if self.liberation_available():
+            self.click_liberation(wait_if_cd_ready=0)
+        return False
+
+    def _basic_until(self, seconds, done):
+        start = time.time()
+        while self.time_elapsed_accounting_for_freeze(start) < seconds:
+            ensure_combat(self)
+            if done():
+                return True
+            self.click()
+            self.sleep(0.08)
         ensure_combat(self)
-        if not self.is_con_full():
-            self.continues_normal_attack(4, until_con_full=True)
-        ensure_combat(self)
-        if not self.is_con_full():
-            self.logger.info('chisa: set finished before concerto was full')
-        set_prefer(self, 'Rover')
-        return self.switch_next_char()
+        return bool(done())
 
     def _enhanced_ready(self):
         return self.is_forte_full() or bool(self.is_e_forte_full())

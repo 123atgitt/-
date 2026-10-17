@@ -85,6 +85,25 @@ def ensure_combat(char):
     if task is not None and hasattr(task, 'next_frame'):
         task.next_frame()
     char.check_combat()
+
+
+def concerto_is_full(char):
+    """current_con 記成滿了就不再讀畫面。換人前把舊記號清掉再看。"""
+    char.current_con = 0
+    if char.is_con_full():
+        char.current_con = 1
+        return True
+    task = getattr(char, 'task', None)
+    if task is None or not hasattr(task, 'get_current_con'):
+        return False
+    try:
+        value = float(task.get_current_con())
+    except (TypeError, ValueError):
+        return False
+    if value >= 1:
+        char.current_con = 1
+        return True
+    return False
 # ELECTRO_LOOP_SHARED_END
 
 
@@ -217,6 +236,9 @@ class Rover(BaseChar):
         if not self._enhanced_confirmed:
             self.wait_down(click=False)
             self.click_echo()
+            if not self.liberation_available():
+                self.logger.info('rover: liberation energy short, basic')
+                self._basic_until(8, self.liberation_available)
             self.click_liberation(click_f=False)
             # 強化小招已經亮就不要先點普通小招。
             if not self._enhanced_prompt() and self.resonance_available():
@@ -271,29 +293,22 @@ class Rover(BaseChar):
         return not self._enhanced_prompt()
 
     def _concerto_is_full(self):
-        # current_con 一旦被記成 1 就不會再讀畫面，換人前要看現在的協奏。
-        self.current_con = 0
-        if self.is_con_full():
-            self.current_con = 1
-            return True
-        try:
-            value = float(self.task.get_current_con())
-        except (TypeError, ValueError):
-            return False
-        if value >= 1:
-            self.current_con = 1
-            return True
-        return False
+        return concerto_is_full(self)
 
-    def _fill_concerto(self):
+    def _basic_until(self, seconds, done):
         start = time.time()
-        while time.time() - start < 12:
+        while time.time() - start < seconds:
             ensure_combat(self)
-            if self._concerto_is_full():
+            if done():
                 return True
             self.click()
-            self.sleep(0.1)
-        return self._concerto_is_full()
+            self.sleep(0.08)
+        ensure_combat(self)
+        return bool(done())
+
+    def _fill_concerto(self):
+        self.logger.info('rover: concerto not full, basic')
+        return self._basic_until(12, self._concerto_is_full)
 
     def _perform_electric_routine_default(self):
         self.wait_down(click=False)
