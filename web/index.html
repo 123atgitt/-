@@ -4,22 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>鳴潮主線小說</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #071018;
-  --bg-2: #0c1a24;
-  --panel: rgba(12, 26, 36, 0.92);
-  --ink: #e7efe8;
-  --muted: #8aa0a8;
-  --accent: #d4a84b;
-  --accent-2: #3ec6b0;
-  --line: rgba(212, 168, 75, 0.28);
-  --shadow: 0 24px 80px rgba(0,0,0,.45);
-  --serif: "Noto Serif TC", "Source Han Serif TC", "Songti TC", serif;
-  --display: "ZCOOL XiaoWei", "Noto Serif TC", serif;
+  --bg: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #666666;
+  --line: #e5e5e5;
+  --link: #1a1a1a;
+  /* system UI stack — phone default */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC",
+          "Hiragino Sans CNS", "Noto Sans TC", "Microsoft JhengHei",
+          "Helvetica Neue", Arial, sans-serif;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -27,134 +22,142 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
-  font-family: var(--serif);
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(62,198,176,.14), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(212,168,75,.10), transparent 50%),
-    linear-gradient(180deg, #050b12 0%, var(--bg) 40%, #08141d 100%);
-  background-attachment: fixed;
+  font-family: var(--font);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
 }
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; opacity: .35;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
-}
-a { color: var(--accent-2); text-decoration: none; }
-a:hover { color: var(--accent); }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-.shell { width: min(720px, 100% - 2rem); margin: 0 auto; padding: 2rem 0 4rem; }
+.shell {
+  width: min(680px, 100% - 2rem);
+  margin: 0 auto;
+  padding: 1.75rem 0 3.5rem;
+}
+
 .brand {
-  font-family: var(--display);
-  font-size: clamp(2rem, 5vw, 3.4rem);
-  letter-spacing: .12em;
-  color: var(--accent);
-  margin: 0 0 .35rem;
-  animation: rise .8s ease both;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0 0 .4rem;
+  letter-spacing: 0.02em;
 }
 .tagline {
   color: var(--muted);
-  margin: 0 0 2rem;
-  font-size: 1.05rem;
-  animation: rise .9s ease both;
+  margin: 0 0 1.75rem;
+  font-size: .95rem;
+  line-height: 1.5;
 }
+
 nav.toc {
-  display: grid;
-  gap: .75rem;
-  margin: 1.5rem 0 2.5rem;
-}
-nav.toc a {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: .35rem .9rem;
-  align-items: baseline;
-  padding: 1rem 1.15rem;
-  border: 1px solid var(--line);
-  background: linear-gradient(135deg, rgba(18,36,48,.9), rgba(8,18,26,.75));
-  backdrop-filter: blur(8px);
-  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
-  animation: rise .7s ease both;
-}
-nav.toc a:nth-child(1){animation-delay:.05s}
-nav.toc a:nth-child(2){animation-delay:.1s}
-nav.toc a:nth-child(3){animation-delay:.15s}
-nav.toc a:nth-child(4){animation-delay:.2s}
-nav.toc a:nth-child(5){animation-delay:.25s}
-nav.toc a:nth-child(6){animation-delay:.3s}
-nav.toc a:hover {
-  transform: translateY(-2px);
-  border-color: rgba(62,198,176,.45);
-  box-shadow: var(--shadow);
-}
-nav.toc .num { color: var(--accent); font-family: var(--display); font-size: 1.15rem; }
-nav.toc .title { color: var(--ink); font-size: 1.15rem; }
-nav.toc .sub { grid-column: 2; color: var(--muted); font-size: .92rem; }
-
-.topbar {
-  position: sticky; top: 0; z-index: 5;
-  display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center;
-  justify-content: space-between;
-  padding: .75rem 0;
-  margin-bottom: 1rem;
-  background: linear-gradient(180deg, rgba(7,16,24,.96), rgba(7,16,24,.72));
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-}
-.topbar .home { font-family: var(--display); color: var(--accent); letter-spacing: .08em; }
-.pager { display: flex; gap: .6rem; flex-wrap: wrap; }
-.pager a, .btn {
-  border: 1px solid var(--line);
-  padding: .4rem .8rem;
-  color: var(--ink);
-  background: rgba(12,26,36,.7);
-  font-size: .9rem;
-}
-.pager a:hover, .btn:hover { border-color: var(--accent-2); color: var(--accent); }
-
-article.reader {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  padding: clamp(1.25rem, 3vw, 2.5rem);
-  box-shadow: var(--shadow);
-  animation: rise .6s ease both;
-}
-article.reader h1, article.reader h2, article.reader h3 {
-  font-family: var(--display);
-  font-weight: 400;
-  letter-spacing: .06em;
-  color: var(--accent);
-  line-height: 1.35;
-}
-article.reader h1 { font-size: clamp(1.6rem, 3.5vw, 2.2rem); margin-top: 0; }
-article.reader h2 {
-  font-size: clamp(1.25rem, 2.5vw, 1.55rem);
-  margin-top: 2.4rem;
-  padding-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
   border-top: 1px solid var(--line);
 }
+nav.toc a {
+  display: block;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+nav.toc a:hover { background: transparent; text-decoration: none; }
+nav.toc a:hover .title { text-decoration: underline; }
+nav.toc .row {
+  display: flex;
+  gap: .65rem;
+  align-items: baseline;
+}
+nav.toc .num {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.6rem;
+  flex-shrink: 0;
+}
+nav.toc .title {
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+nav.toc .sub {
+  display: block;
+  margin: .25rem 0 0 2.25rem;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: .75rem 0;
+  margin: 0 0 1rem;
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .home {
+  font-weight: 600;
+  color: var(--ink);
+}
+.pager {
+  display: flex;
+  gap: .85rem;
+  flex-wrap: wrap;
+  font-size: .9rem;
+}
+.pager a { color: var(--muted); }
+.pager a:hover { color: var(--ink); }
+
+article.reader h1,
+article.reader h2,
+article.reader h3 {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  line-height: 1.4;
+  font-family: var(--font);
+}
+article.reader h1 {
+  font-size: 1.45rem;
+  margin: 0 0 1.25rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid var(--line);
+}
+article.reader h2 {
+  font-size: 1.15rem;
+  margin: 2rem 0 .85rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+article.reader h3 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 .6rem;
+}
 article.reader p {
-  font-size: clamp(1.05rem, 1.7vw, 1.18rem);
-  line-height: 1.95;
-  margin: 1em 0;
+  font-size: 1.05rem;
+  line-height: 1.85;
+  margin: .9em 0;
 }
 article.reader blockquote {
-  margin: 1.2em 0;
-  padding: .2em 0 .2em 1em;
-  border-left: 3px solid var(--accent-2);
-  color: #c5d5d8;
+  margin: 1em 0;
+  padding: 0 0 0 .9em;
+  border-left: 2px solid var(--line);
+  color: #444;
 }
+
 footer.note {
   margin-top: 2rem;
   color: var(--muted);
-  font-size: .9rem;
+  font-size: .85rem;
+  line-height: 1.5;
 }
-@keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
+
 @media (max-width: 640px) {
-  .shell { width: min(100% - 1.25rem, 720px); padding-top: 1.25rem; }
-  nav.toc a { padding: .85rem .9rem; }
+  .shell { width: min(100% - 1.5rem, 680px); padding-top: 1.25rem; }
+  .brand { font-size: 1.5rem; }
+  article.reader p { font-size: 1.02rem; }
 }
 </style>
 </head>
@@ -164,9 +167,9 @@ footer.note {
 <p class="brand">鳴潮主線小說</p>
 <p class="tagline">依遊戲潮汐任務演出重寫 · 第二人稱「你」</p>
 <nav class="toc">
-<a href="ch00.html"><span class="num">00</span><span class="title">序章　萬象新聲</span><span class="sub">潮汐任務小說化 · 點進去讀</span></a><a href="ch01.html"><span class="num">01</span><span class="title">第一章　但覺今州勝舊州</span><span class="sub">潮汐任務小說化 · 點進去讀</span></a><a href="ch02.html"><span class="num">02</span><span class="title">第二章　致緘默以歡歌</span><span class="sub">潮汐任務小說化 · 點進去讀</span></a><a href="ch03.html"><span class="num">03</span><span class="title">第三章　駛向尚未點亮之星</span><span class="sub">潮汐任務小說化 · 點進去讀</span></a><a href="ch04.html"><span class="num">04</span><span class="title">第四章　新生之作，將湧於淵</span><span class="sub">潮汐任務小說化 · 點進去讀</span></a><a href="complete.html"><span class="num">全</span><span class="title">完整版　一次讀完</span><span class="sub">序章至第四章合併</span></a>
+<a href="ch00.html"><span class="row"><span class="num">00</span><span class="title">序章　萬象新聲</span></span><span class="sub">潮汐任務小說化</span></a><a href="ch01.html"><span class="row"><span class="num">01</span><span class="title">第一章　但覺今州勝舊州</span></span><span class="sub">潮汐任務小說化</span></a><a href="ch02.html"><span class="row"><span class="num">02</span><span class="title">第二章　致緘默以歡歌</span></span><span class="sub">潮汐任務小說化</span></a><a href="ch03.html"><span class="row"><span class="num">03</span><span class="title">第三章　駛向尚未點亮之星</span></span><span class="sub">潮汐任務小說化</span></a><a href="ch04.html"><span class="row"><span class="num">04</span><span class="title">第四章　新生之作，將湧於淵</span></span><span class="sub">潮汐任務小說化</span></a><a href="complete.html"><span class="row"><span class="num">全</span><span class="title">完整版　一次讀完</span></span><span class="sub">序章至第四章合併</span></a>
 </nav>
-<footer class="note">建議直式閱讀；手機與電腦皆可。章與章可從頁頂切換。</footer>
+<footer class="note">手機與電腦皆可閱讀。點章節進入，頁頂可切換上下章。</footer>
 
 </main>
 </body>
