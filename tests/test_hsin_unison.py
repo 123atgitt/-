@@ -413,6 +413,7 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         task = party(hsin, suo, shore)
         order = []
         shore.liberation_available = lambda: False
+        shore.click = lambda: order.append('A')
         shore.click_liberation = lambda *args, **kwargs: order.append('lib') or True
         shore.click_echo = lambda time_out=0: order.append('echo')
         shore.click_resonance = lambda *args, **kwargs: order.append('E') or (False, 0)
@@ -430,7 +431,7 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
 
         shore.switch_next_char = switch
         shore.do_perform()
-        self.assertEqual(order, ['lib', 'E', 'heavy', 'echo', {}])
+        self.assertEqual(order, ['A', 'A', 'A', 'A', 'heavy', 'E', 'echo', 'lib', {}])
         self.assertNotIn('free_intro', switched)
         self.assertEqual(task._hsin_unison, {'phase': 'suoming_build', 'prefer': 'Suoming'})
         self.assertEqual(shore.dodge_count, 5)
@@ -441,13 +442,14 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         order = []
         shore.fill_timeout = 0
         shore.is_con_full = lambda: False
+        shore.click = lambda: order.append('A')
         shore.click_liberation = lambda *args, **kwargs: order.append('lib') or True
         shore.click_echo = lambda time_out=0: order.append('echo')
         shore.click_resonance = lambda *args, **kwargs: True
         shore.heavy_click_forte = lambda *args, **kwargs: order.append('heavy')
         shore.switch_next_char = lambda *args, **kwargs: order.append('switch')
         shore.do_perform()
-        self.assertEqual(order, ['lib', 'heavy', 'echo'])
+        self.assertEqual(order, ['A', 'A', 'A', 'A', 'heavy', 'echo', 'lib'])
         self.assertEqual(task._hsin_unison['phase'], 'shore')
 
     def test_other_teams_still_switch_after_the_old_opener(self):

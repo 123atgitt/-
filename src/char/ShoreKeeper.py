@@ -135,17 +135,16 @@ class ShoreKeeper(BaseChar):
         self.switch_next_char()
 
     def _farm_perform(self):
-        # 開大、E、重擊、生骸，協奏打滿才切鎖暝。沒滿就繼續打，不切人。
+        # 開場 AAAA、重擊、E、生骸，大招放最後。協奏打滿才切鎖暝。
         unison_clear_prefer(self)
         phase = (unison_state(self) or {}).get('phase') or 'shore'
         if phase != 'shore':
             return self._farm_yield()
-        if self.has_intro:
-            self._farm_clicks(2)
-        self.click_liberation()
-        self._resonance_cast()
+        self._farm_clicks(4)
         self.heavy_click_forte(self.is_mouse_forte_full)
+        self._resonance_cast()
         self.click_echo(time_out=0)
+        self.click_liberation()
         if not self._attack_until(self.is_con_full):
             self.logger.info('ShoreKeeper farm: concerto not full, keep hitting')
             return None
