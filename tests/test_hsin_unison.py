@@ -241,109 +241,72 @@ class HsinUnisonTest(unittest.TestCase):
         hsin.do_perform()
         self.assertEqual(called, ['unison'])
 
-    def test_wrong_phase_does_not_force_another_swap(self):
+    def test_wrong_phase_does_not_switch_before_concerto_is_full(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
         task = party(hsin, suo, shore)
         switched = []
+        hsin.fill_timeout = 0
+        hsin.is_con_full = lambda: False
         hsin.switch_next_char = lambda *args, **kwargs: switched.append(kwargs) or kwargs
-        hsin.continues_normal_attack = lambda *args, **kwargs: None
-        hsin.do_unison_perform()
-        self.assertEqual(switched, [{}])
-        self.assertIsNone(task._hsin_unison['prefer'])
+        self.assertIsNone(hsin.do_unison_perform())
+        self.assertEqual(switched, [])
         self.assertEqual(task._hsin_unison['phase'], 'shore')
 
-    def test_r1_pass_is_immediate_and_a_miss_does_not_advance(self):
+    def test_first_visit_is_enhanced_heavy_then_transform(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
         task = party(hsin, suo, shore)
+        from src.Labels import Labels
         from src.char.Hsin import unison_advance
-        unison_advance(shore, 'hsin_r1', 'Hsin')
-        switched = []
-        hsin.switch_next_char = lambda *args, **kwargs: switched.append(kwargs) or kwargs
-        hsin.heavy_available = lambda: 0
-        hsin._cast_marked_liberation = lambda lib2=False: False
-        hsin.time_elapsed_accounting_for_freeze = lambda _start: 100
-        hsin.send_resonance_key = lambda: switched.append('E')
-        self.assertIsNone(hsin._unison_arm())
-        self.assertEqual(switched, [])
-        self.assertEqual(task._hsin_unison['phase'], 'hsin_r1')
-
-        hsin.time_elapsed_accounting_for_freeze = lambda _start: 0
-        hsin._cast_marked_liberation = lambda lib2=False: not lib2
-        result = hsin._unison_arm()
-        self.assertEqual(result, {'free_intro': True})
-        self.assertEqual(task._hsin_unison, {'phase': 'suoming_pass', 'prefer': 'Suoming'})
-        self.assertNotIn('E', switched)
-
-    def test_r2_holds_heavy_then_switches_without_skill_or_free_intro(self):
-        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
-        task = party(hsin, suo, shore)
-        from src.char.Hsin import unison_advance
-        unison_advance(suo, 'hsin_r2', 'Hsin')
-        seen = {'heavy': 0}
+        unison_advance(suo, 'hsin_heavy', 'Hsin')
         order = []
-
-        def heavy_available():
-            seen['heavy'] += 1
-            return 2 if seen['heavy'] == 1 else 0
-
-        def handle_heavy(heavy_type=0):
-            order.append(('heavy', heavy_type))
-            hsin.h2_completed = heavy_type == 2
-            return True
-
-        hsin.heavy_available = heavy_available
-        hsin.handle_heavy = handle_heavy
-        hsin._cast_marked_liberation = lambda lib2=False: order.append(('lib', lib2)) or lib2
+        hsin.heavy_available = lambda: 2
+        hsin.handle_heavy = lambda heavy_type=0: order.append(('heavy', heavy_type)) or True
+        hsin.is_con_full = lambda: False
+        hsin.click_liberation = lambda wait_if_cd_ready=0: order.append('transform') or True
         hsin.switch_next_char = lambda *args, **kwargs: order.append(kwargs) or kwargs
-        hsin.send_resonance_key = lambda: order.append('E')
-        result = hsin._unison_finish()
-        self.assertEqual(order, [('heavy', 2), ('lib', True), {}])
-        self.assertEqual(result, {})
+        task.find_one = lambda name, threshold=0.7: name == Labels.hsin_lib1
+        self.assertEqual(hsin.do_unison_perform(), {})
+        self.assertEqual(order[:2], [('heavy', 2), 'transform'])
+        self.assertEqual(order[-1], {})
+        self.assertNotIn({'free_intro': True}, order)
+        self.assertEqual(task._hsin_unison, {'phase': 'suoming_enhanced', 'prefer': 'Suoming'})
+
+    def test_second_visit_does_four_attacks_heavy_and_ult_before_shorekeeper(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        from src.Labels import Labels
+        from src.char.Hsin import unison_advance
+        unison_advance(suo, 'hsin_finish', 'Hsin')
+        order = []
+        hsin.heavy_available = lambda: 2
+        hsin.handle_heavy = lambda heavy_type=0: order.append(('heavy', heavy_type)) or True
+        hsin.is_con_full = lambda: True
+        hsin.click = lambda: order.append('A')
+        hsin.click_liberation = lambda wait_if_cd_ready=0: order.append('ult') or True
+        hsin.switch_next_char = lambda *args, **kwargs: order.append(kwargs) or kwargs
+        task.find_one = lambda name, threshold=0.7: name == Labels.hsin_lib2
+        hsin.do_unison_perform()
+        self.assertEqual(order[:4], ['A', 'A', 'A', 'A'])
+        self.assertIn(('heavy', 2), order)
+        self.assertIn('ult', order)
+        self.assertEqual(order[-1], {})
+        self.assertLess(order.index(('heavy', 2)), order.index('ult'))
         self.assertEqual(task._hsin_unison, {'phase': 'shore', 'prefer': 'ShoreKeeper'})
 
-    def test_r2_waits_through_the_heavy_animation_without_clicking(self):
-        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
-        party(hsin, suo, shore)
-        from src.char.Hsin import unison_advance
-        unison_advance(suo, 'hsin_r2', 'Hsin')
-        seen = {'heavy': 0}
-        clicks = []
-
-        def heavy_available():
-            seen['heavy'] += 1
-            return 2 if seen['heavy'] == 1 else 0
-
-        def handle_heavy(heavy_type=0):
-            hsin.h2_completed = True
-            hsin.h2_guard_until = time.time() + 4
-            return True
-
-        calls = {'n': 0}
-
-        def elapsed(_start):
-            calls['n'] += 1
-            return 100 if calls['n'] > 2 else 0
-
-        hsin.heavy_available = heavy_available
-        hsin.handle_heavy = handle_heavy
-        hsin.time_elapsed_accounting_for_freeze = elapsed
-        hsin._cast_marked_liberation = lambda lib2=False: False
-        hsin.click = lambda: clicks.append('click')
-        hsin.switch_next_char = lambda *args, **kwargs: kwargs
-        self.assertIsNone(hsin._unison_finish())
-        self.assertEqual(clicks, [])
-
-    def test_r2_miss_stays_on_the_damage_visit(self):
+    def test_second_visit_does_not_leave_before_the_ult(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
         task = party(hsin, suo, shore)
         from src.char.Hsin import unison_advance
-        unison_advance(suo, 'hsin_r2', 'Hsin')
+        unison_advance(suo, 'hsin_finish', 'Hsin')
+        hsin.fill_timeout = 0
         hsin.heavy_available = lambda: 0
-        hsin._cast_marked_liberation = lambda lib2=False: False
-        hsin.time_elapsed_accounting_for_freeze = lambda _start: 100
+        hsin.is_con_full = lambda: True
+        hsin.liberation_available = lambda: False
+        hsin.click = lambda: None
         hsin.switch_next_char = lambda *args, **kwargs: kwargs
-        self.assertIsNone(hsin._unison_finish())
-        self.assertEqual(task._hsin_unison['phase'], 'hsin_r2')
+        task.find_one = lambda name, threshold=0.7: None
+        self.assertIsNone(hsin.do_unison_perform())
+        self.assertEqual(task._hsin_unison['phase'], 'hsin_finish')
 
 
 class SuomingUnisonTest(unittest.TestCase):
@@ -370,40 +333,46 @@ class SuomingUnisonTest(unittest.TestCase):
         suo.do_perform()
         self.assertEqual(order, ['echo', {'free_intro': True}])
 
-    def test_support_uses_the_original_cast_then_passes(self):
+    def test_first_visit_waits_for_ult_and_concerto_before_switching(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
         task = party(hsin, suo, shore)
         from src.char.Suoming import unison_advance
-        unison_advance(shore, 'suoming_arm', 'Suoming')
+        unison_advance(shore, 'suoming_build', 'Suoming')
         order = []
-        suo.has_intro = True
-        suo.continues_normal_attack = lambda duration=0, until_con_full=False: order.append(('attack', duration))
-        suo.click_echo = lambda time_out=0: order.append('echo')
-        suo.click_resonance = lambda **kwargs: order.append('E')
-        suo.click_liberation = lambda wait_if_cd_ready=1: False
-        suo.perform_forte = lambda: order.append('forte')
-        suo.switch_next_char = lambda *args, **kwargs: order.append(kwargs) or kwargs
-        suo.do_perform()
-        self.assertEqual(order, [('attack', 1.6), 'echo', 'forte', {}])
-        self.assertNotIn('E', order)
-        self.assertEqual(task._hsin_unison['phase'], 'suoming_arm')
+        suo.fill_timeout = 0
+        suo.liberation_available = lambda: False
+        suo.is_con_full = lambda: False
+        suo.click = lambda: order.append('A')
+        suo.switch_next_char = lambda *args, **kwargs: order.append(kwargs)
+        self.assertIsNone(suo.do_perform())
+        self.assertEqual(order, [])
+        self.assertEqual(task._hsin_unison['phase'], 'suoming_build')
 
-        order.clear()
-        suo.click_liberation = lambda wait_if_cd_ready=1: order.append(('lib', wait_if_cd_ready)) or True
+        suo.fill_timeout = 12
+        suo.liberation_available = lambda: True
+        suo.is_con_full = lambda: True
+        suo.click_liberation = lambda wait_if_cd_ready=0: order.append('ult') or True
         suo.do_perform()
-        self.assertEqual(order, [('attack', 1.6), ('lib', 1), 'echo', {'free_intro': True}])
-        self.assertEqual(task._hsin_unison, {'phase': 'hsin_r1', 'prefer': 'Hsin'})
+        self.assertEqual(order, ['ult', {}])
+        self.assertNotIn({'free_intro': True}, order)
+        self.assertEqual(task._hsin_unison, {'phase': 'hsin_heavy', 'prefer': 'Hsin'})
 
-    def test_second_pass_arms_the_damage_visit(self):
+    def test_second_visit_finishes_enhanced_basics_before_hsin(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
         task = party(hsin, suo, shore)
         from src.char.Suoming import unison_advance
-        unison_advance(hsin, 'suoming_pass', 'Suoming')
-        suo.click_liberation = lambda wait_if_cd_ready=1: True
-        suo.switch_next_char = lambda *args, **kwargs: kwargs
-        self.assertEqual(suo.do_perform(), {'free_intro': True})
-        self.assertEqual(task._hsin_unison, {'phase': 'hsin_r2', 'prefer': 'Hsin'})
-        self.assertEqual(suo.get_switch_priority(), SWITCH.NORMAL)
+        unison_advance(hsin, 'suoming_enhanced', 'Suoming')
+        order = []
+        suo.forte_available = lambda: True
+        suo.is_con_full = lambda: True
+        suo.click_resonance = lambda **kwargs: order.append('enhanced-e')
+        suo.click = lambda: order.append('A')
+        suo.switch_next_char = lambda *args, **kwargs: order.append(kwargs) or kwargs
+        self.assertEqual(suo.do_perform(), {})
+        self.assertEqual(order[0], 'enhanced-e')
+        self.assertEqual(order[1:9], ['A'] * 8)
+        self.assertEqual(order[-1], {})
+        self.assertEqual(task._hsin_unison, {'phase': 'hsin_finish', 'prefer': 'Hsin'})
 
 
 class ShoreKeeperUnisonTest(unittest.TestCase):
@@ -461,10 +430,24 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
 
         shore.switch_next_char = switch
         shore.do_perform()
-        self.assertEqual(order, ['echo', 'lib', 'E', 'heavy', {}])
+        self.assertEqual(order, ['lib', 'E', 'heavy', 'echo', {}])
         self.assertNotIn('free_intro', switched)
-        self.assertEqual(task._hsin_unison, {'phase': 'suoming_arm', 'prefer': 'Suoming'})
+        self.assertEqual(task._hsin_unison, {'phase': 'suoming_build', 'prefer': 'Suoming'})
         self.assertEqual(shore.dodge_count, 5)
+
+    def test_does_not_switch_before_concerto_is_full(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        order = []
+        shore.fill_timeout = 0
+        shore.is_con_full = lambda: False
+        shore.click_liberation = lambda *args, **kwargs: order.append('lib') or True
+        shore.click_echo = lambda time_out=0: order.append('echo')
+        shore.click_resonance = lambda *args, **kwargs: True
+        shore.switch_next_char = lambda *args, **kwargs: order.append('switch')
+        shore.do_perform()
+        self.assertEqual(order, ['lib', 'echo'])
+        self.assertEqual(task._hsin_unison['phase'], 'shore')
 
     def test_other_teams_still_switch_after_the_old_opener(self):
         shore = ShoreKeeper()

@@ -56,6 +56,17 @@ def unison_clear_prefer(char):
         state['prefer'] = None
 
 
+def unison_owner(char):
+    phase = (unison_state(char) or {}).get('phase') or 'shore'
+    return {
+        'shore': 'ShoreKeeper',
+        'suoming_build': 'Suoming',
+        'hsin_heavy': 'Hsin',
+        'suoming_enhanced': 'Suoming',
+        'hsin_finish': 'Hsin',
+    }.get(phase, 'ShoreKeeper')
+
+
 def reset_unison(char):
     task = getattr(char, 'task', None)
     if task is None or not unison_team(char):
@@ -105,7 +116,7 @@ class ShoreKeeper(BaseChar):
 
     def do_perform(self):
         if unison_team(self):
-            unison_clear_prefer(self)
+            return self._farm_perform()
         if self.has_intro:
             self.task.skip_combat_check = True
             try:
@@ -121,11 +132,52 @@ class ShoreKeeper(BaseChar):
         self.click_liberation()
         if not self._resonance_cast():
             self.heavy_click_forte(self.is_mouse_forte_full)
-        # 出手跟原本一樣。同奏只在開場這一輪指定下一個人是鎖暝。
-        if unison_team(self) and (unison_state(self) or {}).get('phase') == 'shore':
-            unison_advance(self, 'suoming_arm', 'Suoming')
-            self.logger.info('ShoreKeeper unison: switch to Suoming')
         self.switch_next_char()
+
+    def _farm_perform(self):
+        # 開大、E、生骸，協奏打滿才切鎖暝。沒滿就繼續打，不切人。
+        unison_clear_prefer(self)
+        phase = (unison_state(self) or {}).get('phase') or 'shore'
+        if phase != 'shore':
+            return self._farm_yield()
+        if self.has_intro:
+            self._farm_clicks(2)
+        self.click_liberation()
+        if not self._resonance_cast():
+            self.heavy_click_forte(self.is_mouse_forte_full)
+        self.click_echo(time_out=0)
+        if not self._attack_until(self.is_con_full):
+            self.logger.info('ShoreKeeper farm: concerto not full, keep hitting')
+            return None
+        unison_advance(self, 'suoming_build', 'Suoming')
+        self.logger.info('ShoreKeeper farm: concerto full, switch to Suoming')
+        return self.switch_next_char()
+
+    def _farm_yield(self):
+        owner = unison_owner(self)
+        if not self._attack_until(self.is_con_full):
+            self.click()
+            return None
+        state = unison_state(self)
+        if state is not None:
+            state['prefer'] = owner
+        return self.switch_next_char()
+
+    def _farm_clicks(self, count):
+        for _ in range(count):
+            self.check_combat()
+            self.click()
+            self.sleep(0.05)
+
+    def _attack_until(self, ready):
+        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        while time.time() < deadline:
+            self.check_combat()
+            if ready():
+                return True
+            self.click()
+            self.sleep(0.02)
+        return bool(ready())
 
     def _resonance_cast(self):
         result = self.click_resonance()

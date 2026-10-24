@@ -57,6 +57,17 @@ def unison_clear_prefer(char):
         state['prefer'] = None
 
 
+def unison_owner(char):
+    phase = (unison_state(char) or {}).get('phase') or 'shore'
+    return {
+        'shore': 'ShoreKeeper',
+        'suoming_build': 'Suoming',
+        'hsin_heavy': 'Hsin',
+        'suoming_enhanced': 'Suoming',
+        'hsin_finish': 'Hsin',
+    }.get(phase, 'ShoreKeeper')
+
+
 def reset_unison(char):
     task = getattr(char, 'task', None)
     if task is None or not unison_team(char):
@@ -97,9 +108,9 @@ class Suoming(BaseChar):
         return result
 
     def do_perform(self):
-        # Kit reference: https://ww.nanoka.cc/character/1312/
         if not self.is_dps_config() and unison_team(self):
-            unison_clear_prefer(self)
+            return self._farm_perform()
+        # Kit reference: https://ww.nanoka.cc/character/1312/
         if self.has_intro:
             self.continues_normal_attack(duration=1.6)
         liberated = self.click_liberation(wait_if_cd_ready=1)
@@ -107,14 +118,6 @@ class Suoming(BaseChar):
         # Support passes Unison; DPS consumes it with Rift Cleaver for Seal Master.
         if liberated and not dps:
             self.click_echo(time_out=0)
-            if unison_team(self):
-                phase = (unison_state(self) or {}).get('phase')
-                if phase in ('suoming_arm', 'suoming_pass'):
-                    next_phase = 'hsin_r2' if phase == 'suoming_pass' else 'hsin_r1'
-                    unison_advance(self, next_phase, 'Hsin')
-                    self.logger.info(f'Suoming unison: R passed, next={next_phase}')
-                    return self.switch_next_char(free_intro=True)
-                return self.switch_next_char()
             return self.switch_next_char(free_intro=True)
 
         if liberated or self.has_intro:
@@ -126,6 +129,85 @@ class Suoming(BaseChar):
         else:
             self.continues_normal_attack(1.1)
         self.switch_next_char()
+
+    def _farm_perform(self):
+        unison_clear_prefer(self)
+        phase = (unison_state(self) or {}).get('phase') or 'shore'
+        if phase == 'suoming_build':
+            return self._farm_build()
+        if phase == 'suoming_enhanced':
+            return self._farm_enhanced()
+        return self._farm_yield()
+
+    def _farm_build(self):
+        # 技能和普攻打到大招、協奏都滿，再開大切心。沒滿不切。
+        self.logger.info('Suoming farm: skills until ult and concerto are full')
+        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        while time.time() < deadline:
+            self.check_combat()
+            if self.liberation_available() and self.is_con_full():
+                break
+            self._press_skill_or_attack()
+            self.sleep(0.02)
+        else:
+            self.logger.info('Suoming farm: ult or concerto not full, keep hitting')
+            return None
+        if not self.click_liberation(wait_if_cd_ready=0):
+            self.click()
+            self.logger.info('Suoming farm: ult not cast, keep hitting')
+            return None
+        unison_advance(self, 'hsin_heavy', 'Hsin')
+        self.logger.info('Suoming farm: ult cast, switch to Hsin')
+        return self.switch_next_char()
+
+    def _farm_enhanced(self):
+        # 一直打到強化 E，強化普攻打完，協奏滿了才切心。
+        self.logger.info('Suoming farm: attack until enhanced E')
+        if not self._attack_until(self.forte_available):
+            self.logger.info('Suoming farm: enhanced E not ready, keep hitting')
+            return None
+        self.click_resonance(send_click=True, time_out=0)
+        self.logger.info('Suoming farm: enhanced basics')
+        self._farm_clicks(8)
+        if not self._attack_until(self.is_con_full):
+            self.logger.info('Suoming farm: concerto not full, keep hitting')
+            return None
+        unison_advance(self, 'hsin_finish', 'Hsin')
+        self.logger.info('Suoming farm: enhanced combo done, switch to Hsin')
+        return self.switch_next_char()
+
+    def _farm_yield(self):
+        owner = unison_owner(self)
+        if not self._attack_until(self.is_con_full):
+            self.click()
+            return None
+        state = unison_state(self)
+        if state is not None:
+            state['prefer'] = owner
+        return self.switch_next_char()
+
+    def _press_skill_or_attack(self):
+        available = getattr(self, 'resonance_available', None)
+        if callable(available) and available():
+            self.click_resonance(send_click=True, time_out=0)
+            return
+        self.click()
+
+    def _farm_clicks(self, count):
+        for _ in range(count):
+            self.check_combat()
+            self.click()
+            self.sleep(0.05)
+
+    def _attack_until(self, ready):
+        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        while time.time() < deadline:
+            self.check_combat()
+            if ready():
+                return True
+            self.click()
+            self.sleep(0.02)
+        return bool(ready())
 
     def forte_available(self):
         return bool(self.task.find_one(Labels.suoming_forte_e))

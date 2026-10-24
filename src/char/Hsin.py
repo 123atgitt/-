@@ -142,6 +142,17 @@ def unison_clear_prefer(char):
         state['prefer'] = None
 
 
+def unison_owner(char):
+    phase = (unison_state(char) or {}).get('phase') or 'shore'
+    return {
+        'shore': 'ShoreKeeper',
+        'suoming_build': 'Suoming',
+        'hsin_heavy': 'Hsin',
+        'suoming_enhanced': 'Suoming',
+        'hsin_finish': 'Hsin',
+    }.get(phase, 'ShoreKeeper')
+
+
 def reset_unison(char):
     task = getattr(char, 'task', None)
     if task is None or not unison_team(char):
@@ -214,70 +225,115 @@ class Hsin(BaseChar):
         return result
 
     def do_unison_perform(self):
-        """同奏：第一輪只放轉相並把同奏還給鎖暝；第二輪才打統御和萬闕垂天。"""
+        """刷生骸：第一次強化重擊加變身交回鎖暝；第二次四下普攻、強化重擊、大絕回守岸人。"""
         unison_clear_prefer(self)
-        phase = (unison_state(self) or {}).get('phase')
-        self.logger.info(f'Hsin unison phase={phase}')
-        if phase == 'hsin_r1':
-            return self._unison_arm()
-        if phase == 'hsin_r2':
-            return self._unison_finish()
-        # 還沒輪到心就不要再強制換人，否則三個人會互相拉來拉去。
-        self.continues_normal_attack(1.2)
+        phase = (unison_state(self) or {}).get('phase') or 'shore'
+        self.logger.info(f'Hsin farm phase={phase}')
+        if phase == 'hsin_heavy':
+            return self._farm_heavy()
+        if phase == 'hsin_finish':
+            return self._farm_finish()
+        return self._farm_yield()
+
+    def _farm_heavy(self):
+        # 強化重擊，變身，再切鎖暝。圖示沒來就繼續普攻。
+        self.logger.info('Hsin farm: enhanced heavy then transform')
+        if self._attack_until(lambda: self.heavy_available() in (1, 2)):
+            self.handle_heavy(self.heavy_available() or 2)
+        else:
+            self.click()
+        transformed = self._attack_until(self._press_transform, timeout=self._farm_window(4))
+        if not (transformed or self.is_con_full() or self._yellow_unison()):
+            if not self._attack_until(lambda: self.is_con_full() or self._yellow_unison()):
+                self.logger.info('Hsin farm: heavy not finished, keep hitting')
+                return None
+        unison_advance(self, 'suoming_enhanced', 'Suoming')
+        self.logger.info('Hsin farm: transform done, switch to Suoming')
         return self.switch_next_char()
 
-    def _wait_unison_intro(self):
-        if self.has_intro:
-            self.sleep(0.2)
-
-    def _unison_arm(self):
-        # 進場的同奏變奏要留著。轉相之後立刻切走，後面的小招會吃掉 5 秒同奏。
-        self._wait_unison_intro()
-        start = time.time()
-        heavy_done = False
-        while self.time_elapsed_accounting_for_freeze(start) < 6:
-            ensure_combat(self)
-            if not heavy_done and self.heavy_available() == 1:
-                if self.handle_heavy(1):
-                    heavy_done = True
-                continue
-            if self._cast_marked_liberation(lib2=False):
-                unison_advance(self, 'suoming_pass', 'Suoming')
-                self.logger.info('Hsin unison: R1 passed to Suoming')
-                return self.switch_next_char(free_intro=True)
+    def _farm_finish(self):
+        # A4，強化重擊，大絕，協奏滿了回守岸人。
+        self.logger.info('Hsin farm: four attacks, enhanced heavy, ult')
+        self._farm_clicks(4)
+        if self._attack_until(lambda: self.heavy_available() == 2, timeout=self._farm_window(6)):
+            self.handle_heavy(2)
+        else:
             self.click()
-            self.cycle_sleep()
-        self.logger.info('Hsin unison: R1 not ready, stay')
-        return None
+        if not self._attack_until(self._press_lib2, timeout=self._farm_window(6)):
+            self.logger.info('Hsin farm: ult not cast, keep hitting')
+            return None
+        if not (self.is_con_full() or self._yellow_unison()):
+            if not self._attack_until(lambda: self.is_con_full() or self._yellow_unison()):
+                self.logger.info('Hsin farm: concerto not full, keep hitting')
+                return None
+        unison_advance(self, 'shore', 'ShoreKeeper')
+        self.logger.info('Hsin farm: ult done, back to ShoreKeeper')
+        return self.switch_next_char()
 
-    def _unison_finish(self):
-        # 這次進場會直接統御。只普攻等到強化重擊，再放萬闕垂天。不要按小招。
-        self._wait_unison_intro()
-        self.lib2_cast_this_turn = False
-        self.h2_completed = False
+    def _farm_yield(self):
+        owner = unison_owner(self)
+        if not self._attack_until(lambda: self.is_con_full() or self._yellow_unison()):
+            self.click()
+            return None
+        state = unison_state(self)
+        if state is not None:
+            state['prefer'] = owner
+        return self.switch_next_char()
+
+    def _farm_window(self, seconds):
+        return min(seconds, getattr(self, 'fill_timeout', seconds))
+
+    def _press_transform(self):
+        find = getattr(self.task, 'find_one', None)
+        if not callable(find) or not find(Labels.hsin_lib1, threshold=0.7):
+            return False
+        self._transform_tries = getattr(self, '_transform_tries', 0) + 1
+        if self._transform_tries > 3:
+            return False
+        return bool(self.click_liberation(wait_if_cd_ready=0))
+
+    def _press_lib2(self):
+        find = getattr(self.task, 'find_one', None)
+        icon = callable(find) and bool(find(Labels.hsin_lib2, threshold=0.7))
+        if not icon and not self.liberation_available():
+            return False
+        self._lib2_tries = getattr(self, '_lib2_tries', 0) + 1
+        if self._lib2_tries > 3:
+            return False
+        if not self.click_liberation(wait_if_cd_ready=0):
+            return False
+        self.lib2_cast_this_turn = True
         self.h2_guard_until = 0.0
-        start = time.time()
-        try:
-            while self.time_elapsed_accounting_for_freeze(start) < 18:
-                ensure_combat(self)
-                if self.heavy_available() == 2:
-                    self.handle_heavy(2)
-                    continue
-                if self.h2_completed or self.task.find_one(Labels.hsin_lib2, threshold=0.7):
-                    if self._cast_marked_liberation(lib2=True):
-                        unison_advance(self, 'shore', 'ShoreKeeper')
-                        self.logger.info('Hsin unison: R2 done, back to ShoreKeeper')
-                        return self.switch_next_char()
-                    # 重擊動畫還在時不要普攻，避免把萬闕垂天的圖示打斷。
-                    if self.h2_guard_until > time.time():
-                        self.cycle_sleep()
-                        continue
-                self.click()
-                self.cycle_sleep()
-        finally:
-            self.h2_guard_until = 0.0
-        self.logger.info('Hsin unison: R2 not ready, stay')
-        return None
+        return True
+
+    def _yellow_unison(self):
+        find = getattr(self.task, 'find_one', None)
+        if not callable(find):
+            return False
+        for name in ('unison', 'yellow_unison'):
+            try:
+                if find(name, threshold=0.7):
+                    return True
+            except TypeError:
+                return False
+        return False
+
+    def _farm_clicks(self, count):
+        for _ in range(count):
+            self.check_combat()
+            self.click()
+            self.sleep(0.05)
+
+    def _attack_until(self, ready, timeout=None):
+        limit = getattr(self, 'fill_timeout', 12) if timeout is None else timeout
+        deadline = time.time() + limit
+        while time.time() < deadline:
+            self.check_combat()
+            if ready():
+                return True
+            self.click()
+            self.sleep(0.02)
+        return bool(ready())
 
     def _set_stage(self, stage):
         self._stage = stage
