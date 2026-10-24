@@ -64,11 +64,9 @@ class ShoreKeeper(BaseChar):
         self.dodge_count = 0
         self.attribute = 0
         self.check_f_on_switch = True
-        self._unison_realm_cast = False
 
     def reset_state(self):
         super().reset_state()
-        self._unison_realm_cast = False
         reset_unison(self)
 
     def get_switch_priority(self, current_char=None, has_intro=False, target_low_con=False):
@@ -93,8 +91,6 @@ class ShoreKeeper(BaseChar):
             self.attribute = 1
 
     def do_perform(self):
-        if unison_team(self):
-            return self.do_unison_perform()
         if self.has_intro:
             self.task.skip_combat_check = True
             try:
@@ -108,57 +104,19 @@ class ShoreKeeper(BaseChar):
                 self.task.skip_combat_check = False
         self.click_echo(time_out=0)
         self.click_liberation()
-        if not self.click_resonance():
+        if not self._resonance_cast():
             self.heavy_click_forte(self.is_mouse_forte_full)
+        # 出手跟原本一樣。同奏只在開場這一輪指定下一個人是鎖暝。
+        if unison_team(self) and (unison_state(self) or {}).get('phase') == 'shore':
+            unison_advance(self, 'suoming_arm', 'Suoming')
+            self.logger.info('ShoreKeeper unison: switch to Suoming')
         self.switch_next_char()
 
-    def do_unison_perform(self):
-        """同奏開場：領域要放成，協奏滿了才用真正的延奏切給鎖暝。"""
-        phase = (unison_state(self) or {}).get('phase')
-        self.logger.info(f'ShoreKeeper unison phase={phase}')
-        if phase != 'shore':
-            return self.switch_next_char()
-        return self._unison_open()
-
-    def _refresh(self):
-        if hasattr(self.task, 'next_frame'):
-            self.task.next_frame()
-        self.check_combat()
-
-    def _play_intro(self):
-        if not self.has_intro:
-            return
-        self.task.skip_combat_check = True
-        try:
-            self.logger.debug('ShoreKeeper wait intro animation')
-            time.sleep(0.1)
-            if not self.task.in_team_and_world():
-                self.task.wait_in_team_and_world(time_out=4, raise_if_not_found=False)
-            else:
-                self.continues_normal_attack(1.2)
-        finally:
-            self.task.skip_combat_check = False
-
-    def _unison_open(self):
-        self._play_intro()
-        self.click_echo(time_out=0)
-        self._refresh()
-        if not self._unison_realm_cast:
-            if not self.liberation_available() or not self.click_liberation(wait_if_cd_ready=0):
-                self.logger.info('ShoreKeeper unison: realm not ready, stay')
-                return None
-            self._unison_realm_cast = True
-        if not self.click_resonance():
-            self.heavy_click_forte(self.is_mouse_forte_full)
-        if not self.is_con_full():
-            self.continues_normal_attack(5, until_con_full=True)
-        if not self.is_con_full():
-            self.logger.info('ShoreKeeper unison: concerto not full, stay')
-            return None
-        self._unison_realm_cast = False
-        unison_advance(self, 'suoming_arm', 'Suoming')
-        self.logger.info('ShoreKeeper unison: realm ready, switch to Suoming')
-        return self.switch_next_char()
+    def _resonance_cast(self):
+        result = self.click_resonance()
+        if isinstance(result, (tuple, list)):
+            return bool(result and result[0])
+        return bool(result)
 
     def switch_next_char(self, *args, **kwargs):
         if self.is_con_full():

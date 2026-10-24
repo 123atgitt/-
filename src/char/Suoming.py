@@ -84,8 +84,6 @@ class Suoming(BaseChar):
         return super().get_switch_priority(current_char, has_intro, target_low_con)
 
     def do_perform(self):
-        if not self.is_dps_config() and unison_team(self):
-            return self.do_unison_perform()
         # Kit reference: https://ww.nanoka.cc/character/1312/
         if self.has_intro:
             self.continues_normal_attack(duration=1.6)
@@ -94,6 +92,11 @@ class Suoming(BaseChar):
         # Support passes Unison; DPS consumes it with Rift Cleaver for Seal Master.
         if liberated and not dps:
             self.click_echo(time_out=0)
+            if unison_team(self):
+                phase = (unison_state(self) or {}).get('phase')
+                next_phase = 'hsin_r2' if phase == 'suoming_pass' else 'hsin_r1'
+                unison_advance(self, next_phase, 'Hsin')
+                self.logger.info(f'Suoming unison: R passed, next={next_phase}')
             return self.switch_next_char(free_intro=True)
 
         if liberated or self.has_intro:
@@ -105,37 +108,6 @@ class Suoming(BaseChar):
         else:
             self.continues_normal_attack(1.1)
         self.switch_next_char()
-
-    def do_unison_perform(self):
-        """同奏：大招確認後立刻把同奏交給心。不要按破隙。"""
-        phase = (unison_state(self) or {}).get('phase')
-        self.logger.info(f'Suoming unison phase={phase}')
-        if phase == 'suoming_arm':
-            return self._unison_pass('hsin_r1')
-        if phase == 'suoming_pass':
-            return self._unison_pass('hsin_r2')
-        return self.switch_next_char()
-
-    def _refresh(self):
-        if hasattr(self.task, 'next_frame'):
-            self.task.next_frame()
-        self.check_combat()
-
-    def _unison_pass(self, next_phase):
-        # 聲骸和普攻只放在大招前面。大招一確認就切走，破隙會把同奏吃成主 C。
-        if self.has_intro:
-            self.continues_normal_attack(0.4)
-        self.click_echo(time_out=0)
-        start = time.time()
-        while self.time_elapsed_accounting_for_freeze(start) < 6:
-            self._refresh()
-            if self.liberation_available() and self.click_liberation(wait_if_cd_ready=0):
-                unison_advance(self, next_phase, 'Hsin')
-                self.logger.info(f'Suoming unison: R passed, next={next_phase}')
-                return self.switch_next_char(free_intro=True)
-            self.sleep(0.05)
-        self.logger.info('Suoming unison: R not ready, stay')
-        return None
 
     def forte_available(self):
         return bool(self.task.find_one(Labels.suoming_forte_e))
