@@ -141,7 +141,7 @@ class ShoreKeeper(BaseChar):
         if phase != 'shore':
             return self._farm_yield()
         self._farm_clicks(4)
-        self.heavy_click_forte(self.is_mouse_forte_full)
+        self._cast_heavy()
         self._resonance_cast()
         self.click_echo(time_out=0)
         self.click_liberation()
@@ -161,6 +161,30 @@ class ShoreKeeper(BaseChar):
         if state is not None:
             state['prefer'] = owner
         return self.switch_next_char()
+
+    def _cast_heavy(self):
+        # heavy_click_forte 在 forte 沒滿時直接返回，四下普攻後重擊不會出來。
+        # 這裡一定按住：至少 0.7 秒，forte 滿了就放，最長 1.2 秒。
+        self.check_combat()
+        down = getattr(self.task, 'mouse_down', None)
+        up = getattr(self.task, 'mouse_up', None)
+        if not callable(down) or not callable(up):
+            self.heavy_click_forte(lambda: True)
+            self.sleep(0.15)
+            return
+        self.logger.info('ShoreKeeper farm: hold heavy')
+        down()
+        try:
+            held = 0.0
+            while held < 1.2:
+                self.check_combat()
+                self.sleep(0.05)
+                held += 0.05
+                if held >= 0.7 and self.is_mouse_forte_full():
+                    break
+        finally:
+            up()
+        self.sleep(0.15)
 
     def _farm_clicks(self, count):
         for _ in range(count):

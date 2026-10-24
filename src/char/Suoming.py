@@ -140,25 +140,27 @@ class Suoming(BaseChar):
         return self._farm_yield()
 
     def _farm_build(self):
-        # 技能和普攻打到大招、協奏都滿，再開大切心。沒滿不切。
-        self.logger.info('Suoming farm: skills until ult and concerto are full')
+        # 大招亮了就按，不要等協奏。開完之後協奏滿或同奏黃了才切心。
+        self.logger.info('Suoming farm: press ult when ready, then fill concerto')
         deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        next_ult = 0.0
         while time.time() < deadline:
             self.check_combat()
-            if self.liberation_available() and self.is_con_full():
-                break
+            state = unison_state(self) or {}
+            if not state.get('suoming_ult'):
+                now = time.time()
+                if self.liberation_available() or now >= next_ult:
+                    next_ult = now + 0.45
+                    self._cast_ult()
+                    state = unison_state(self) or {}
+            if state.get('suoming_ult') and (self.is_con_full() or self._yellow_unison()):
+                unison_advance(self, 'hsin_heavy', 'Hsin')
+                self.logger.info('Suoming farm: ult cast, switch to Hsin')
+                return self.switch_next_char()
             self._press_skill_or_attack()
             self.sleep(0.02)
-        else:
-            self.logger.info('Suoming farm: ult or concerto not full, keep hitting')
-            return None
-        if not self.click_liberation(wait_if_cd_ready=0):
-            self.click()
-            self.logger.info('Suoming farm: ult not cast, keep hitting')
-            return None
-        unison_advance(self, 'hsin_heavy', 'Hsin')
-        self.logger.info('Suoming farm: ult cast, switch to Hsin')
-        return self.switch_next_char()
+        self.logger.info('Suoming farm: ult or concerto not ready, keep hitting')
+        return None
 
     def _farm_enhanced(self):
         # 一直打到強化 E，強化普攻打完，協奏滿了才切心。
@@ -169,6 +171,8 @@ class Suoming(BaseChar):
         self.click_resonance(send_click=True, time_out=0)
         self.logger.info('Suoming farm: enhanced basics')
         self._farm_clicks(8)
+        if self.liberation_available():
+            self._cast_ult()
         if not self._attack_until(self.is_con_full):
             self.logger.info('Suoming farm: concerto not full, keep hitting')
             return None
@@ -185,6 +189,31 @@ class Suoming(BaseChar):
         if state is not None:
             state['prefer'] = owner
         return self.switch_next_char()
+
+    def _cast_ult(self):
+        state = unison_state(self)
+        if isinstance(state, dict) and state.get('suoming_ult'):
+            return True
+        # wait_if_cd_ready=0 常常立刻失敗，圖示亮著也不按。沿用原本開得動的按法。
+        if not self.click_liberation(wait_if_cd_ready=1):
+            return False
+        if isinstance(state, dict):
+            state['suoming_ult'] = True
+        self.logger.info('Suoming farm: ult cast')
+        self.sleep(0.35)
+        return True
+
+    def _yellow_unison(self):
+        find = getattr(self.task, 'find_one', None)
+        if not callable(find):
+            return False
+        for name in ('unison', 'yellow_unison'):
+            try:
+                if find(name, threshold=0.7):
+                    return True
+            except TypeError:
+                return False
+        return False
 
     def _press_skill_or_attack(self):
         available = getattr(self, 'resonance_available', None)

@@ -151,6 +151,12 @@ class Task:
     def wait_in_team_and_world(self, time_out=0, raise_if_not_found=False):
         return None
 
+    def mouse_down(self):
+        return None
+
+    def mouse_up(self):
+        return None
+
 
 class Named:
     def __init__(self, name, ring_index=-1):
@@ -351,11 +357,99 @@ class SuomingUnisonTest(unittest.TestCase):
         suo.fill_timeout = 12
         suo.liberation_available = lambda: True
         suo.is_con_full = lambda: True
-        suo.click_liberation = lambda wait_if_cd_ready=0: order.append('ult') or True
+        suo.click_liberation = lambda wait_if_cd_ready=1: order.append('ult') or True
         suo.do_perform()
         self.assertEqual(order, ['ult', {}])
         self.assertNotIn({'free_intro': True}, order)
-        self.assertEqual(task._hsin_unison, {'phase': 'hsin_heavy', 'prefer': 'Hsin'})
+        self.assertEqual(
+            task._hsin_unison,
+            {'phase': 'hsin_heavy', 'prefer': 'Hsin', 'suoming_ult': True},
+        )
+
+    def test_ult_is_pressed_before_concerto_and_switch_waits(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        from src.char.Suoming import unison_advance
+        unison_advance(shore, 'suoming_build', 'Suoming')
+        order = []
+        suo.fill_timeout = 0.05
+        suo.liberation_available = lambda: True
+        suo.is_con_full = lambda: False
+        suo.click_liberation = lambda wait_if_cd_ready=1: order.append('ult') or True
+        suo.click = lambda: order.append('A')
+        suo.switch_next_char = lambda *args, **kwargs: order.append('switch')
+        self.assertIsNone(suo.do_perform())
+        self.assertIn('ult', order)
+        self.assertNotIn('switch', order)
+        self.assertEqual(task._hsin_unison['phase'], 'suoming_build')
+        self.assertTrue(task._hsin_unison['suoming_ult'])
+
+        order.clear()
+        suo.fill_timeout = 12
+        suo.liberation_available = lambda: False
+        suo.is_con_full = lambda: True
+        suo.click_liberation = lambda wait_if_cd_ready=1: order.append('ult-again') or False
+        suo.switch_next_char = lambda *args, **kwargs: kwargs
+        self.assertEqual(suo.do_perform(), {})
+        self.assertNotIn('ult-again', order)
+        self.assertEqual(task._hsin_unison['phase'], 'hsin_heavy')
+        self.assertEqual(task._hsin_unison['prefer'], 'Hsin')
+
+    def test_ult_is_pressed_when_the_ready_check_is_wrong(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        from src.char.Suoming import unison_advance
+        unison_advance(shore, 'suoming_build', 'Suoming')
+        calls = []
+        suo.fill_timeout = 12
+        suo.liberation_available = lambda: False
+        suo.is_con_full = lambda: True
+
+        def click_liberation(wait_if_cd_ready=0):
+            calls.append(wait_if_cd_ready)
+            return True
+
+        suo.click_liberation = click_liberation
+        suo.click = lambda: None
+        suo.switch_next_char = lambda *args, **kwargs: kwargs
+        self.assertEqual(suo.do_perform(), {})
+        self.assertEqual(calls, [1])
+        self.assertEqual(task._hsin_unison['phase'], 'hsin_heavy')
+
+    def test_yellow_unison_switches_after_the_ult(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        from src.char.Suoming import unison_advance
+        unison_advance(shore, 'suoming_build', 'Suoming')
+        suo.fill_timeout = 12
+        suo.liberation_available = lambda: True
+        suo.is_con_full = lambda: False
+        suo.click_liberation = lambda wait_if_cd_ready=1: True
+        suo.click = lambda: None
+        suo.switch_next_char = lambda *args, **kwargs: kwargs
+        task.find_one = lambda name, threshold=0.7: name == 'yellow_unison'
+        self.assertEqual(suo.do_perform(), {})
+        self.assertEqual(task._hsin_unison['phase'], 'hsin_heavy')
+
+    def test_second_visit_presses_a_lit_ult_without_skipping_the_combo(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        from src.char.Suoming import unison_advance
+        unison_advance(hsin, 'suoming_enhanced', 'Suoming')
+        order = []
+        suo.forte_available = lambda: True
+        suo.liberation_available = lambda: True
+        suo.is_con_full = lambda: True
+        suo.click_resonance = lambda **kwargs: order.append('enhanced-e')
+        suo.click_liberation = lambda wait_if_cd_ready=1: order.append('ult') or True
+        suo.click = lambda: order.append('A')
+        suo.switch_next_char = lambda *args, **kwargs: order.append(kwargs) or kwargs
+        self.assertEqual(suo.do_perform(), {})
+        self.assertEqual(order[0], 'enhanced-e')
+        self.assertEqual(order[1:9], ['A'] * 8)
+        self.assertEqual(order[9], 'ult')
+        self.assertEqual(order[-1], {})
+        self.assertEqual(task._hsin_unison['phase'], 'hsin_finish')
 
     def test_second_visit_finishes_enhanced_basics_before_hsin(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
@@ -417,7 +511,10 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         shore.click_liberation = lambda *args, **kwargs: order.append('lib') or True
         shore.click_echo = lambda time_out=0: order.append('echo')
         shore.click_resonance = lambda *args, **kwargs: order.append('E') or (False, 0)
-        shore.heavy_click_forte = lambda *args, **kwargs: order.append('heavy')
+        shore.is_mouse_forte_full = lambda: True
+        released = []
+        task.mouse_down = lambda: order.append('heavy')
+        task.mouse_up = lambda: released.append('up')
         shore.is_con_full = lambda: True
         switched = {}
 
@@ -432,6 +529,7 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         shore.switch_next_char = switch
         shore.do_perform()
         self.assertEqual(order, ['A', 'A', 'A', 'A', 'heavy', 'E', 'echo', 'lib', {}])
+        self.assertEqual(released, ['up'])
         self.assertNotIn('free_intro', switched)
         self.assertEqual(task._hsin_unison, {'phase': 'suoming_build', 'prefer': 'Suoming'})
         self.assertEqual(shore.dodge_count, 5)
@@ -446,7 +544,9 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         shore.click_liberation = lambda *args, **kwargs: order.append('lib') or True
         shore.click_echo = lambda time_out=0: order.append('echo')
         shore.click_resonance = lambda *args, **kwargs: True
-        shore.heavy_click_forte = lambda *args, **kwargs: order.append('heavy')
+        shore.is_mouse_forte_full = lambda: False
+        task.mouse_down = lambda: order.append('heavy')
+        task.mouse_up = lambda: None
         shore.switch_next_char = lambda *args, **kwargs: order.append('switch')
         shore.do_perform()
         self.assertEqual(order, ['A', 'A', 'A', 'A', 'heavy', 'echo', 'lib'])
