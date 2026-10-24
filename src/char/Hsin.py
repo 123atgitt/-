@@ -88,6 +88,59 @@ def ensure_combat(char):
     char.check_combat()
 # ELECTRO_LOOP_SHARED_END
 
+# UNISON_SHARED_BEGIN
+# 心、鎖暝、守岸人各有一份，內容必須相同。三人互不 import。
+UNISON_ATTR = '_hsin_unison'
+
+
+def _unison_names(task):
+    return {c.name for c in getattr(task, 'chars', []) or [] if c is not None}
+
+
+def unison_team(char):
+    """只有心、鎖暝、守岸人，且鎖暝不是主 C 設定，才走同奏。"""
+    task = getattr(char, 'task', None)
+    if task is None:
+        return False
+    config = getattr(task, 'char_config', None) or {}
+    if config.get('Suoming DPS'):
+        return False
+    return {'Hsin', 'Suoming', 'ShoreKeeper'} <= _unison_names(task)
+
+
+def unison_state(char):
+    task = getattr(char, 'task', None)
+    if task is None:
+        return None
+    state = getattr(task, UNISON_ATTR, None)
+    if state is None:
+        state = {'phase': 'shore', 'prefer': 'ShoreKeeper'}
+        setattr(task, UNISON_ATTR, state)
+    return state
+
+
+def unison_wants(char):
+    if not unison_team(char):
+        return False
+    state = unison_state(char)
+    return bool(state and state.get('prefer') == char.name)
+
+
+def unison_advance(char, phase, prefer):
+    state = unison_state(char)
+    if state is None:
+        return None
+    state['phase'] = phase
+    state['prefer'] = prefer
+    return state
+
+
+def reset_unison(char):
+    task = getattr(char, 'task', None)
+    if task is None or not unison_team(char):
+        return
+    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': 'ShoreKeeper'})
+# UNISON_SHARED_END
 
 
 class Hsin(BaseChar):
@@ -102,9 +155,12 @@ class Hsin(BaseChar):
     def reset_state(self):
         super().reset_state()
         reset_loop(self)
+        reset_unison(self)
 
     def get_switch_priority(self, current_char=None, has_intro=False, target_low_con=False):
         if wants_must(self):
+            return SwitchPriority.MUST
+        if unison_wants(self):
             return SwitchPriority.MUST
         return super().get_switch_priority(current_char, has_intro, target_low_con)
 
@@ -118,6 +174,8 @@ class Hsin(BaseChar):
         return self.h2_guard_until > 0
 
     def do_perform(self):
+        if not is_hsin_electro_team(self) and unison_team(self):
+            return self.do_unison_perform()
         self.lib2_cast_this_turn = False
         self.finisher_start = None
         self.finisher_e_sent = False
@@ -141,6 +199,69 @@ class Hsin(BaseChar):
         self.logger.debug(f'Hsin switch_next_char start: lib2_cast={self.lib2_cast_this_turn}')
         self.switch_next_char()
         self.logger.debug('Hsin switch_next_char end')
+
+    def do_unison_perform(self):
+        """同奏：第一輪只放轉相並把同奏還給鎖暝；第二輪才打統御和萬闕垂天。"""
+        phase = (unison_state(self) or {}).get('phase')
+        self.logger.info(f'Hsin unison phase={phase}')
+        if phase == 'hsin_r1':
+            return self._unison_arm()
+        if phase == 'hsin_r2':
+            return self._unison_finish()
+        return self.switch_next_char()
+
+    def _wait_unison_intro(self):
+        if self.has_intro:
+            self.sleep(0.2)
+
+    def _unison_arm(self):
+        # 進場的同奏變奏要留著。轉相之後立刻切走，後面的小招會吃掉 5 秒同奏。
+        self._wait_unison_intro()
+        start = time.time()
+        heavy_done = False
+        while self.time_elapsed_accounting_for_freeze(start) < 6:
+            ensure_combat(self)
+            if not heavy_done and self.heavy_available() == 1:
+                if self.handle_heavy(1):
+                    heavy_done = True
+                continue
+            if self._cast_marked_liberation(lib2=False):
+                unison_advance(self, 'suoming_pass', 'Suoming')
+                self.logger.info('Hsin unison: R1 passed to Suoming')
+                return self.switch_next_char(free_intro=True)
+            self.click()
+            self.cycle_sleep()
+        self.logger.info('Hsin unison: R1 not ready, stay')
+        return None
+
+    def _unison_finish(self):
+        # 這次進場會直接統御。只普攻等到強化重擊，再放萬闕垂天。不要按小招。
+        self._wait_unison_intro()
+        self.lib2_cast_this_turn = False
+        self.h2_completed = False
+        self.h2_guard_until = 0.0
+        start = time.time()
+        try:
+            while self.time_elapsed_accounting_for_freeze(start) < 18:
+                ensure_combat(self)
+                if self.heavy_available() == 2:
+                    self.handle_heavy(2)
+                    continue
+                if self.h2_completed or self.task.find_one(Labels.hsin_lib2, threshold=0.7):
+                    if self._cast_marked_liberation(lib2=True):
+                        unison_advance(self, 'shore', 'ShoreKeeper')
+                        self.logger.info('Hsin unison: R2 done, back to ShoreKeeper')
+                        return self.switch_next_char()
+                    # 重擊動畫還在時不要普攻，避免把萬闕垂天的圖示打斷。
+                    if self.h2_guard_until > time.time():
+                        self.cycle_sleep()
+                        continue
+                self.click()
+                self.cycle_sleep()
+        finally:
+            self.h2_guard_until = 0.0
+        self.logger.info('Hsin unison: R2 not ready, stay')
+        return None
 
     def _set_stage(self, stage):
         self._stage = stage
