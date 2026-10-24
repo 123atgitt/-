@@ -55,6 +55,10 @@ def install_stubs():
         def reset_state(self):
             return None
 
+        def on_combat_end(self, chars):
+            self.combat_ended = chars
+            return chars
+
         def get_switch_priority(self, current_char=None, has_intro=False, target_low_con=False):
             return SwitchPriority.NORMAL
 
@@ -207,7 +211,7 @@ class UnisonSharedTest(unittest.TestCase):
         from src.char.Hsin import unison_advance
         unison_advance(hsin, 'hsin_r2', 'Hsin')
         hsin.reset_state()
-        self.assertEqual(task._hsin_unison, {'phase': 'shore', 'prefer': 'ShoreKeeper'})
+        self.assertEqual(task._hsin_unison, {'phase': 'shore', 'prefer': None})
 
 
 class HsinUnisonTest(unittest.TestCase):
@@ -236,6 +240,17 @@ class HsinUnisonTest(unittest.TestCase):
         party(hsin, suo, shore)
         hsin.do_perform()
         self.assertEqual(called, ['unison'])
+
+    def test_wrong_phase_does_not_force_another_swap(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        switched = []
+        hsin.switch_next_char = lambda *args, **kwargs: switched.append(kwargs) or kwargs
+        hsin.continues_normal_attack = lambda *args, **kwargs: None
+        hsin.do_unison_perform()
+        self.assertEqual(switched, [{}])
+        self.assertIsNone(task._hsin_unison['prefer'])
+        self.assertEqual(task._hsin_unison['phase'], 'shore')
 
     def test_r1_pass_is_immediate_and_a_miss_does_not_advance(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
@@ -414,11 +429,15 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
         party(hsin, suo, shore)
         shore.attribute = 1
-        self.assertEqual(shore.get_switch_priority(), SWITCH.MUST)
+        self.assertEqual(shore.get_switch_priority(), SWITCH.NORMAL)
         from src.char.ShoreKeeper import unison_advance
         unison_advance(shore, 'suoming_arm', 'Suoming')
         self.assertEqual(shore.get_switch_priority(), SWITCH.NORMAL)
         self.assertEqual(suo.get_switch_priority(), SWITCH.MUST)
+        suo.on_combat_end(['pickup'])
+        self.assertEqual(suo.combat_ended, ['pickup'])
+        self.assertIsNone(suo.task._hsin_unison['prefer'])
+        self.assertEqual(suo.get_switch_priority(), SWITCH.NORMAL)
 
     def test_original_kit_names_suoming_and_still_heavies(self):
         hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()

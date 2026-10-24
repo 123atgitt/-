@@ -29,7 +29,7 @@ def unison_state(char):
         return None
     state = getattr(task, UNISON_ATTR, None)
     if state is None:
-        state = {'phase': 'shore', 'prefer': 'ShoreKeeper'}
+        state = {'phase': 'shore', 'prefer': None}
         setattr(task, UNISON_ATTR, state)
     return state
 
@@ -38,7 +38,7 @@ def unison_wants(char):
     if not unison_team(char):
         return False
     state = unison_state(char)
-    return bool(state and state.get('prefer') == char.name)
+    return bool(state and state.get('prefer') and state.get('prefer') == char.name)
 
 
 def unison_advance(char, phase, prefer):
@@ -50,11 +50,18 @@ def unison_advance(char, phase, prefer):
     return state
 
 
+def unison_clear_prefer(char):
+    task = getattr(char, 'task', None)
+    state = getattr(task, UNISON_ATTR, None) if task is not None else None
+    if isinstance(state, dict):
+        state['prefer'] = None
+
+
 def reset_unison(char):
     task = getattr(char, 'task', None)
     if task is None or not unison_team(char):
         return
-    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': 'ShoreKeeper'})
+    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': None})
 # UNISON_SHARED_END
 
 
@@ -83,8 +90,16 @@ class Suoming(BaseChar):
             return SwitchPriority.MUST
         return super().get_switch_priority(current_char, has_intro, target_low_con)
 
+    def on_combat_end(self, chars):
+        parent = getattr(super(), 'on_combat_end', None)
+        result = parent(chars) if parent is not None else None
+        unison_clear_prefer(self)
+        return result
+
     def do_perform(self):
         # Kit reference: https://ww.nanoka.cc/character/1312/
+        if not self.is_dps_config() and unison_team(self):
+            unison_clear_prefer(self)
         if self.has_intro:
             self.continues_normal_attack(duration=1.6)
         liberated = self.click_liberation(wait_if_cd_ready=1)
@@ -94,9 +109,12 @@ class Suoming(BaseChar):
             self.click_echo(time_out=0)
             if unison_team(self):
                 phase = (unison_state(self) or {}).get('phase')
-                next_phase = 'hsin_r2' if phase == 'suoming_pass' else 'hsin_r1'
-                unison_advance(self, next_phase, 'Hsin')
-                self.logger.info(f'Suoming unison: R passed, next={next_phase}')
+                if phase in ('suoming_arm', 'suoming_pass'):
+                    next_phase = 'hsin_r2' if phase == 'suoming_pass' else 'hsin_r1'
+                    unison_advance(self, next_phase, 'Hsin')
+                    self.logger.info(f'Suoming unison: R passed, next={next_phase}')
+                    return self.switch_next_char(free_intro=True)
+                return self.switch_next_char()
             return self.switch_next_char(free_intro=True)
 
         if liberated or self.has_intro:

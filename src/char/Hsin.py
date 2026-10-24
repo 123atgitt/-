@@ -114,7 +114,7 @@ def unison_state(char):
         return None
     state = getattr(task, UNISON_ATTR, None)
     if state is None:
-        state = {'phase': 'shore', 'prefer': 'ShoreKeeper'}
+        state = {'phase': 'shore', 'prefer': None}
         setattr(task, UNISON_ATTR, state)
     return state
 
@@ -123,7 +123,7 @@ def unison_wants(char):
     if not unison_team(char):
         return False
     state = unison_state(char)
-    return bool(state and state.get('prefer') == char.name)
+    return bool(state and state.get('prefer') and state.get('prefer') == char.name)
 
 
 def unison_advance(char, phase, prefer):
@@ -135,11 +135,18 @@ def unison_advance(char, phase, prefer):
     return state
 
 
+def unison_clear_prefer(char):
+    task = getattr(char, 'task', None)
+    state = getattr(task, UNISON_ATTR, None) if task is not None else None
+    if isinstance(state, dict):
+        state['prefer'] = None
+
+
 def reset_unison(char):
     task = getattr(char, 'task', None)
     if task is None or not unison_team(char):
         return
-    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': 'ShoreKeeper'})
+    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': None})
 # UNISON_SHARED_END
 
 
@@ -200,14 +207,23 @@ class Hsin(BaseChar):
         self.switch_next_char()
         self.logger.debug('Hsin switch_next_char end')
 
+    def on_combat_end(self, chars):
+        parent = getattr(super(), 'on_combat_end', None)
+        result = parent(chars) if parent is not None else None
+        unison_clear_prefer(self)
+        return result
+
     def do_unison_perform(self):
         """同奏：第一輪只放轉相並把同奏還給鎖暝；第二輪才打統御和萬闕垂天。"""
+        unison_clear_prefer(self)
         phase = (unison_state(self) or {}).get('phase')
         self.logger.info(f'Hsin unison phase={phase}')
         if phase == 'hsin_r1':
             return self._unison_arm()
         if phase == 'hsin_r2':
             return self._unison_finish()
+        # 還沒輪到心就不要再強制換人，否則三個人會互相拉來拉去。
+        self.continues_normal_attack(1.2)
         return self.switch_next_char()
 
     def _wait_unison_intro(self):

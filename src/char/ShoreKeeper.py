@@ -28,7 +28,7 @@ def unison_state(char):
         return None
     state = getattr(task, UNISON_ATTR, None)
     if state is None:
-        state = {'phase': 'shore', 'prefer': 'ShoreKeeper'}
+        state = {'phase': 'shore', 'prefer': None}
         setattr(task, UNISON_ATTR, state)
     return state
 
@@ -37,7 +37,7 @@ def unison_wants(char):
     if not unison_team(char):
         return False
     state = unison_state(char)
-    return bool(state and state.get('prefer') == char.name)
+    return bool(state and state.get('prefer') and state.get('prefer') == char.name)
 
 
 def unison_advance(char, phase, prefer):
@@ -49,11 +49,18 @@ def unison_advance(char, phase, prefer):
     return state
 
 
+def unison_clear_prefer(char):
+    task = getattr(char, 'task', None)
+    state = getattr(task, UNISON_ATTR, None) if task is not None else None
+    if isinstance(state, dict):
+        state['prefer'] = None
+
+
 def reset_unison(char):
     task = getattr(char, 'task', None)
     if task is None or not unison_team(char):
         return
-    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': 'ShoreKeeper'})
+    setattr(task, UNISON_ATTR, {'phase': 'shore', 'prefer': None})
 # UNISON_SHARED_END
 
 
@@ -90,7 +97,15 @@ class ShoreKeeper(BaseChar):
         else:
             self.attribute = 1
 
+    def on_combat_end(self, chars):
+        parent = getattr(super(), 'on_combat_end', None)
+        result = parent(chars) if parent is not None else None
+        unison_clear_prefer(self)
+        return result
+
     def do_perform(self):
+        if unison_team(self):
+            unison_clear_prefer(self)
         if self.has_intro:
             self.task.skip_combat_check = True
             try:
