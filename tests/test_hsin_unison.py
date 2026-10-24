@@ -444,9 +444,10 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         shore.click_liberation = lambda *args, **kwargs: order.append('lib') or True
         shore.click_echo = lambda time_out=0: order.append('echo')
         shore.click_resonance = lambda *args, **kwargs: True
+        shore.heavy_click_forte = lambda *args, **kwargs: order.append('heavy')
         shore.switch_next_char = lambda *args, **kwargs: order.append('switch')
         shore.do_perform()
-        self.assertEqual(order, ['lib', 'echo'])
+        self.assertEqual(order, ['lib', 'heavy', 'echo'])
         self.assertEqual(task._hsin_unison['phase'], 'shore')
 
     def test_other_teams_still_switch_after_the_old_opener(self):
