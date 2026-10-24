@@ -135,17 +135,18 @@ class ShoreKeeper(BaseChar):
         self.switch_next_char()
 
     def _farm_perform(self):
-        # 開場 AAAA、重擊、E、生骸，大招放最後。協奏打滿才切鎖暝。
+        # 開場四下普攻、E、生骸，大招放最後。上方能量滿了才重擊。協奏滿了切鎖暝。
         unison_clear_prefer(self)
+        self._shore_heavied = False
         phase = (unison_state(self) or {}).get('phase') or 'shore'
         if phase != 'shore':
             return self._farm_yield()
         self._farm_clicks(4)
-        self._cast_heavy()
+        self._heavy_if_bar_full()
         self._resonance_cast()
         self.click_echo(time_out=0)
         self.click_liberation()
-        if not self._attack_until(self.is_con_full):
+        if not self._fill_concerto():
             self.logger.info('ShoreKeeper farm: concerto not full, keep hitting')
             return None
         unison_advance(self, 'suoming_build', 'Suoming')
@@ -162,17 +163,30 @@ class ShoreKeeper(BaseChar):
             state['prefer'] = owner
         return self.switch_next_char()
 
-    def _cast_heavy(self):
-        # heavy_click_forte 在 forte 沒滿時直接返回，四下普攻後重擊不會出來。
-        # 這裡一定按住：至少 0.7 秒，forte 滿了就放，最長 1.2 秒。
+    def _fill_concerto(self):
+        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        while time.time() < deadline:
+            self.check_combat()
+            self._heavy_if_bar_full()
+            if self.is_con_full():
+                return True
+            self.click()
+            self.sleep(0.02)
+        self._heavy_if_bar_full()
+        return bool(self.is_con_full())
+
+    def _heavy_if_bar_full(self):
+        # 只有上方能量條滿了才重擊。沒滿就繼續普攻。
+        if getattr(self, '_shore_heavied', False) or not self.is_mouse_forte_full():
+            return False
+        self._shore_heavied = True
         self.check_combat()
         down = getattr(self.task, 'mouse_down', None)
         up = getattr(self.task, 'mouse_up', None)
         if not callable(down) or not callable(up):
-            self.heavy_click_forte(lambda: True)
-            self.sleep(0.15)
-            return
-        self.logger.info('ShoreKeeper farm: hold heavy')
+            self.heavy_click_forte(self.is_mouse_forte_full)
+            return True
+        self.logger.info('ShoreKeeper farm: top energy full, heavy')
         down()
         try:
             held = 0.0
@@ -180,11 +194,12 @@ class ShoreKeeper(BaseChar):
                 self.check_combat()
                 self.sleep(0.05)
                 held += 0.05
-                if held >= 0.7 and self.is_mouse_forte_full():
+                if held >= 0.25 and not self.is_mouse_forte_full():
                     break
         finally:
             up()
-        self.sleep(0.15)
+        self.sleep(0.1)
+        return True
 
     def _farm_clicks(self, count):
         for _ in range(count):

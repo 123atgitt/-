@@ -252,7 +252,7 @@ class Hsin(BaseChar):
         return self.switch_next_char()
 
     def _farm_finish(self):
-        # A4，強化重擊，大絕，協奏滿了回守岸人。
+        # A4，強化重擊，大絕，回到守岸人。
         self.logger.info('Hsin farm: four attacks, enhanced heavy, ult')
         self._farm_clicks(4)
         if self._attack_until(lambda: self.heavy_available() == 2, timeout=self._farm_window(6)):
@@ -262,10 +262,6 @@ class Hsin(BaseChar):
         if not self._attack_until(self._press_lib2, timeout=self._farm_window(6)):
             self.logger.info('Hsin farm: ult not cast, keep hitting')
             return None
-        if not (self.is_con_full() or self._yellow_unison()):
-            if not self._attack_until(lambda: self.is_con_full() or self._yellow_unison()):
-                self.logger.info('Hsin farm: concerto not full, keep hitting')
-                return None
         unison_advance(self, 'shore', 'ShoreKeeper')
         self.logger.info('Hsin farm: ult done, back to ShoreKeeper')
         return self.switch_next_char()

@@ -140,45 +140,42 @@ class Suoming(BaseChar):
         return self._farm_yield()
 
     def _farm_build(self):
-        # 大招亮了就按，不要等協奏。開完之後協奏滿或同奏黃了才切心。
-        self.logger.info('Suoming farm: press ult when ready, then fill concerto')
+        # 協奏滿或同奏黃了就切心。這段不綁大招。
+        self.logger.info('Suoming farm: concerto full switches to Hsin')
+        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        while time.time() < deadline:
+            self.check_combat()
+            if self.is_con_full() or self._yellow_unison():
+                unison_advance(self, 'hsin_heavy', 'Hsin')
+                self.logger.info('Suoming farm: concerto full, switch to Hsin')
+                return self.switch_next_char()
+            self._press_skill_or_attack()
+            self.sleep(0.02)
+        self.logger.info('Suoming farm: concerto not full, keep hitting')
+        return None
+
+    def _farm_enhanced(self):
+        # 同奏進場。大招快滿或已經滿了就開，開完心才能同奏進。
+        self.logger.info('Suoming farm: unison entry, cast ult for Hsin')
         deadline = time.time() + getattr(self, 'fill_timeout', 12)
         next_ult = 0.0
         while time.time() < deadline:
             self.check_combat()
             state = unison_state(self) or {}
-            if not state.get('suoming_ult'):
-                now = time.time()
-                if self.liberation_available() or now >= next_ult:
-                    next_ult = now + 0.45
-                    self._cast_ult()
-                    state = unison_state(self) or {}
-            if state.get('suoming_ult') and (self.is_con_full() or self._yellow_unison()):
-                unison_advance(self, 'hsin_heavy', 'Hsin')
-                self.logger.info('Suoming farm: ult cast, switch to Hsin')
-                return self.switch_next_char()
-            self._press_skill_or_attack()
+            now = time.time()
+            if not state.get('suoming_ult') and now >= next_ult:
+                next_ult = now + 0.45
+                if self._cast_ult():
+                    unison_advance(self, 'hsin_finish', 'Hsin')
+                    self.logger.info('Suoming farm: ult cast, Hsin can unison in')
+                    return self.switch_next_char()
+            if self.forte_available():
+                self.click_resonance(send_click=True, time_out=0)
+            else:
+                self.click()
             self.sleep(0.02)
-        self.logger.info('Suoming farm: ult or concerto not ready, keep hitting')
+        self.logger.info('Suoming farm: ult not cast, keep hitting')
         return None
-
-    def _farm_enhanced(self):
-        # 一直打到強化 E，強化普攻打完，協奏滿了才切心。
-        self.logger.info('Suoming farm: attack until enhanced E')
-        if not self._attack_until(self.forte_available):
-            self.logger.info('Suoming farm: enhanced E not ready, keep hitting')
-            return None
-        self.click_resonance(send_click=True, time_out=0)
-        self.logger.info('Suoming farm: enhanced basics')
-        self._farm_clicks(8)
-        if self.liberation_available():
-            self._cast_ult()
-        if not self._attack_until(self.is_con_full):
-            self.logger.info('Suoming farm: concerto not full, keep hitting')
-            return None
-        unison_advance(self, 'hsin_finish', 'Hsin')
-        self.logger.info('Suoming farm: enhanced combo done, switch to Hsin')
-        return self.switch_next_char()
 
     def _farm_yield(self):
         owner = unison_owner(self)
