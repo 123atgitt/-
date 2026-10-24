@@ -236,30 +236,59 @@ class Hsin(BaseChar):
         return self._farm_yield()
 
     def _farm_heavy(self):
-        # 強化重擊，變身，再切鎖暝。圖示沒來就繼續普攻。
-        self.logger.info('Hsin farm: enhanced heavy then transform')
-        if self._attack_until(lambda: self.heavy_available() in (1, 2)):
-            self.handle_heavy(self.heavy_available() or 2)
-        else:
-            self.click()
-        transformed = self._attack_until(self._press_transform, timeout=self._farm_window(4))
+        # 變奏進場先接連段。回路滿了重擊，重擊之後變身。變身給同奏，鎖暝就能進來。
+        self.logger.info('Hsin farm: combo, enhanced heavy, transform')
+        if self.has_intro:
+            self.continues_normal_attack(0.4)
+        self.click_echo(time_out=0)
+        heavied = False
+        transformed = False
+        deadline = time.time() + getattr(self, 'fill_timeout', 8)
+        while time.time() < deadline:
+            self.check_combat()
+            if not heavied and self.heavy_available():
+                self.handle_heavy(self.heavy_available() or 1)
+                heavied = True
+                self.click()
+                continue
+            if self._press_transform():
+                transformed = True
+                break
+            if heavied and (self.is_con_full() or self._yellow_unison()):
+                break
+            self._combo_and_dodge()
+            self.sleep(0.02)
         if not (transformed or self.is_con_full() or self._yellow_unison()):
-            if not self._attack_until(lambda: self.is_con_full() or self._yellow_unison()):
-                self.logger.info('Hsin farm: heavy not finished, keep hitting')
-                return None
+            self.logger.info('Hsin farm: heavy not finished, keep hitting')
+            return None
         unison_advance(self, 'suoming_enhanced', 'Suoming')
         self.logger.info('Hsin farm: transform done, switch to Suoming')
         return self.switch_next_char()
 
     def _farm_finish(self):
-        # A4，強化重擊，大絕，回到守岸人。
+        # 同奏進場直接統御。四下普攻、閃避反擊、強化重擊、大絕，回守岸人。
         self.logger.info('Hsin farm: four attacks, enhanced heavy, ult')
+        if self.has_intro:
+            self.continues_normal_attack(0.3)
+        self.click_echo(time_out=0)
         self._farm_clicks(4)
-        if self._attack_until(lambda: self.heavy_available() == 2, timeout=self._farm_window(6)):
-            self.handle_heavy(2)
-        else:
-            self.click()
-        if not self._attack_until(self._press_lib2, timeout=self._farm_window(6)):
+        self._dodge_counter()
+        heavied = False
+        ult = False
+        deadline = time.time() + getattr(self, 'fill_timeout', 8)
+        while time.time() < deadline:
+            self.check_combat()
+            if not heavied and self.heavy_available() == 2:
+                self.handle_heavy(2)
+                heavied = True
+                self.click()
+                continue
+            if self._press_lib2():
+                ult = True
+                break
+            self._combo_and_dodge()
+            self.sleep(0.02)
+        if not ult:
             self.logger.info('Hsin farm: ult not cast, keep hitting')
             return None
         unison_advance(self, 'shore', 'ShoreKeeper')
@@ -268,13 +297,29 @@ class Hsin(BaseChar):
 
     def _farm_yield(self):
         owner = unison_owner(self)
-        if not self._attack_until(lambda: self.is_con_full() or self._yellow_unison()):
-            self.click()
-            return None
-        state = unison_state(self)
-        if state is not None:
-            state['prefer'] = owner
-        return self.switch_next_char()
+        deadline = time.time() + getattr(self, 'fill_timeout', 8)
+        while time.time() < deadline:
+            self.check_combat()
+            if self.is_con_full() or self._yellow_unison():
+                state = unison_state(self)
+                if state is not None:
+                    state['prefer'] = owner
+                return self.switch_next_char()
+            self._combo_and_dodge()
+            self.sleep(0.02)
+        return None
+
+    def _combo_and_dodge(self):
+        self.continues_normal_attack(0.35)
+        if self.is_con_full() or self._yellow_unison():
+            return
+        self._dodge_counter()
+
+    def _dodge_counter(self):
+        right = getattr(self, 'continues_right_click', None)
+        if callable(right):
+            right(0.05)
+        self.click()
 
     def _farm_window(self, seconds):
         return min(seconds, getattr(self, 'fill_timeout', seconds))

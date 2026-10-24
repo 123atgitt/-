@@ -494,7 +494,7 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
 
         shore.switch_next_char = switch
         shore.do_perform()
-        self.assertEqual(order, ['A', 'A', 'A', 'A', 'heavy', 'E', 'echo', 'lib', {}])
+        self.assertEqual(order, ['echo', 'E', 'heavy', 'lib', {}])
         self.assertEqual(released, ['up'])
         self.assertNotIn('free_intro', switched)
         self.assertEqual(task._hsin_unison, {'phase': 'suoming_build', 'prefer': 'Suoming'})
@@ -515,9 +515,38 @@ class ShoreKeeperUnisonTest(unittest.TestCase):
         task.mouse_up = lambda: None
         shore.switch_next_char = lambda *args, **kwargs: order.append('switch')
         shore.do_perform()
-        self.assertEqual(order, ['A', 'A', 'A', 'A', 'echo', 'lib'])
+        self.assertEqual(order, ['echo', 'lib'])
         self.assertNotIn('heavy', order)
         self.assertEqual(task._hsin_unison['phase'], 'shore')
+
+    def test_concerto_is_filled_by_the_combo_and_a_dodge_counter(self):
+        hsin, suo, shore = Hsin(), Suoming(), ShoreKeeper()
+        task = party(hsin, suo, shore)
+        shore.fill_timeout = 8
+        shore.is_mouse_forte_full = lambda: False
+        shore.resonance_available = lambda: False
+        shore.is_con_full = lambda: False
+        seen = []
+
+        shore.continues_normal_attack = lambda *args, **kwargs: seen.append('combo')
+        shore.continues_right_click = lambda *args, **kwargs: seen.append('dodge')
+
+        def counter():
+            seen.append('counter')
+            shore.is_con_full = lambda: True
+
+        shore.click = counter
+        shore.click_liberation = lambda *args, **kwargs: False
+        shore.click_echo = lambda time_out=0: None
+        shore.click_resonance = lambda *args, **kwargs: False
+        shore.switch_next_char = lambda *args, **kwargs: kwargs
+        task.mouse_down = lambda: seen.append('heavy')
+        self.assertEqual(shore.do_perform(), {})
+        self.assertIn('combo', seen)
+        self.assertIn('dodge', seen)
+        self.assertIn('counter', seen)
+        self.assertNotIn('heavy', seen)
+        self.assertEqual(task._hsin_unison['phase'], 'suoming_build')
 
     def test_other_teams_still_switch_after_the_old_opener(self):
         shore = ShoreKeeper()

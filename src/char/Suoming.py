@@ -140,52 +140,91 @@ class Suoming(BaseChar):
         return self._farm_yield()
 
     def _farm_build(self):
-        # 協奏滿或同奏黃了就切心。這段不綁大招。
-        self.logger.info('Suoming farm: concerto full switches to Hsin')
-        deadline = time.time() + getattr(self, 'fill_timeout', 12)
-        while time.time() < deadline:
-            self.check_combat()
-            if self.is_con_full() or self._yellow_unison():
-                unison_advance(self, 'hsin_heavy', 'Hsin')
-                self.logger.info('Suoming farm: concerto full, switch to Hsin')
-                return self.switch_next_char()
-            self._press_skill_or_attack()
-            self.sleep(0.02)
-        self.logger.info('Suoming farm: concerto not full, keep hitting')
-        return None
+        # 變奏進來先接普攻和 E。協奏滿或同奏黃了就切心，不等大招。
+        self.logger.info('Suoming farm: fill concerto with the combo, then Hsin')
+        if self.has_intro:
+            self.continues_normal_attack(0.4)
+        self.click_echo(time_out=0)
+        if not self._fight(lambda: self.is_con_full() or self._yellow_unison()):
+            self.logger.info('Suoming farm: concerto not full, keep hitting')
+            return None
+        unison_advance(self, 'hsin_heavy', 'Hsin')
+        self.logger.info('Suoming farm: concerto full, switch to Hsin')
+        return self.switch_next_char()
 
     def _farm_enhanced(self):
-        # 同奏進場。大招快滿或已經滿了就開，開完心才能同奏進。
-        self.logger.info('Suoming farm: unison entry, cast ult for Hsin')
-        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+        # 同奏進場會灌大招。亮了就開，開完心吃同奏。沒亮就繼續連段和閃避反擊把能量補滿。
+        self.logger.info('Suoming farm: unison entry, ult, then Hsin')
+        if self.has_intro:
+            self.continues_normal_attack(0.3)
+        self.click_echo(time_out=0)
+        deadline = time.time() + getattr(self, 'fill_timeout', 8)
         next_ult = 0.0
+        next_skill = 0.0
         while time.time() < deadline:
             self.check_combat()
-            state = unison_state(self) or {}
             now = time.time()
-            if not state.get('suoming_ult') and now >= next_ult:
+            if now >= next_ult:
                 next_ult = now + 0.45
                 if self._cast_ult():
                     unison_advance(self, 'hsin_finish', 'Hsin')
                     self.logger.info('Suoming farm: ult cast, Hsin can unison in')
                     return self.switch_next_char()
-            if self.forte_available():
+            if now >= next_skill and (self._enhanced_ready() or self._resonance_ready()):
+                next_skill = now + 0.4
                 self.click_resonance(send_click=True, time_out=0)
             else:
-                self.click()
+                self._combo_and_dodge()
             self.sleep(0.02)
         self.logger.info('Suoming farm: ult not cast, keep hitting')
         return None
 
     def _farm_yield(self):
         owner = unison_owner(self)
-        if not self._attack_until(self.is_con_full):
-            self.click()
+        if not self._fight(lambda: self.is_con_full() or self._yellow_unison()):
             return None
         state = unison_state(self)
         if state is not None:
             state['prefer'] = owner
         return self.switch_next_char()
+
+    def _fight(self, done):
+        deadline = time.time() + getattr(self, 'fill_timeout', 8)
+        next_skill = 0.0
+        while time.time() < deadline:
+            self.check_combat()
+            if done():
+                return True
+            now = time.time()
+            if now >= next_skill and (self._enhanced_ready() or self._resonance_ready()):
+                next_skill = now + 0.4
+                self.click_resonance(send_click=True, time_out=0)
+            else:
+                self._combo_and_dodge()
+            self.sleep(0.02)
+        return bool(done())
+
+    def _combo_and_dodge(self):
+        self.continues_normal_attack(0.35)
+        if self.is_con_full() or self._yellow_unison():
+            return
+        right = getattr(self, 'continues_right_click', None)
+        if callable(right):
+            right(0.05)
+        self.click()
+
+    def _resonance_ready(self):
+        available = getattr(self, 'resonance_available', None)
+        return bool(callable(available) and available())
+
+    def _enhanced_ready(self):
+        find = getattr(self.task, 'find_one', None)
+        if not callable(find):
+            return False
+        try:
+            return bool(find(Labels.suoming_forte_e, threshold=0.7))
+        except TypeError:
+            return bool(find(Labels.suoming_forte_e))
 
     def _cast_ult(self):
         state = unison_state(self)
@@ -211,29 +250,6 @@ class Suoming(BaseChar):
             except TypeError:
                 return False
         return False
-
-    def _press_skill_or_attack(self):
-        available = getattr(self, 'resonance_available', None)
-        if callable(available) and available():
-            self.click_resonance(send_click=True, time_out=0)
-            return
-        self.click()
-
-    def _farm_clicks(self, count):
-        for _ in range(count):
-            self.check_combat()
-            self.click()
-            self.sleep(0.05)
-
-    def _attack_until(self, ready):
-        deadline = time.time() + getattr(self, 'fill_timeout', 12)
-        while time.time() < deadline:
-            self.check_combat()
-            if ready():
-                return True
-            self.click()
-            self.sleep(0.02)
-        return bool(ready())
 
     def forte_available(self):
         return bool(self.task.find_one(Labels.suoming_forte_e))

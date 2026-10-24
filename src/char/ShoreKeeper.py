@@ -135,18 +135,22 @@ class ShoreKeeper(BaseChar):
         self.switch_next_char()
 
     def _farm_perform(self):
-        # 開場四下普攻、E、生骸，大招放最後。上方能量滿了才重擊。協奏滿了切鎖暝。
+        # 協奏靠 E、上方能量滿了的重擊、普攻連段和閃避反擊。滿了或同奏黃了才切鎖暝。
         unison_clear_prefer(self)
         self._shore_heavied = False
+        self._shore_bar_spent = True
+        self._lib_used = False
         phase = (unison_state(self) or {}).get('phase') or 'shore'
         if phase != 'shore':
             return self._farm_yield()
-        self._farm_clicks(4)
-        self._heavy_if_bar_full()
-        self._resonance_cast()
+        self.logger.info('ShoreKeeper farm: skill, heavy when the top bar is full, fill concerto')
+        if self.has_intro:
+            self.continues_normal_attack(0.45)
         self.click_echo(time_out=0)
-        self.click_liberation()
-        if not self._fill_concerto():
+        self._resonance_cast()
+        self._heavy_if_bar_full()
+        self._try_liberation()
+        if not self._fight(self._can_leave):
             self.logger.info('ShoreKeeper farm: concerto not full, keep hitting')
             return None
         unison_advance(self, 'suoming_build', 'Suoming')
@@ -155,31 +159,81 @@ class ShoreKeeper(BaseChar):
 
     def _farm_yield(self):
         owner = unison_owner(self)
-        if not self._attack_until(self.is_con_full):
-            self.click()
+        if not self._fight(self._can_leave):
             return None
         state = unison_state(self)
         if state is not None:
             state['prefer'] = owner
         return self.switch_next_char()
 
-    def _fill_concerto(self):
-        deadline = time.time() + getattr(self, 'fill_timeout', 12)
+    def _can_leave(self):
+        return self.is_con_full() or self._yellow_unison()
+
+    def _fight(self, done):
+        deadline = time.time() + getattr(self, 'fill_timeout', 8)
+        next_skill = 0.0
         while time.time() < deadline:
             self.check_combat()
-            self._heavy_if_bar_full()
-            if self.is_con_full():
+            if done():
                 return True
-            self.click()
+            now = time.time()
+            if self._heavy_if_bar_full():
+                pass
+            elif self._resonance_ready() and now >= next_skill:
+                next_skill = now + 0.4
+                self._resonance_cast()
+            elif not self._lib_used and now >= next_skill:
+                next_skill = now + 0.45
+                self._try_liberation()
+            else:
+                self._combo_and_dodge()
             self.sleep(0.02)
-        self._heavy_if_bar_full()
-        return bool(self.is_con_full())
+        return bool(done())
+
+    def _combo_and_dodge(self):
+        # 按住普攻走完連段，接一次閃避反擊。連段和閃避都會灌協奏，也不會站著挨打。
+        self.continues_normal_attack(0.35)
+        if self.is_con_full():
+            return
+        right = getattr(self, 'continues_right_click', None)
+        if callable(right):
+            right(0.05)
+        self.click()
+
+    def _try_liberation(self):
+        if self._lib_used:
+            return False
+        if not self.click_liberation():
+            return False
+        self._lib_used = True
+        return True
+
+    def _resonance_ready(self):
+        available = getattr(self, 'resonance_available', None)
+        return bool(callable(available) and available())
+
+    def _yellow_unison(self):
+        find = getattr(self.task, 'find_one', None)
+        if not callable(find):
+            return False
+        for name in ('unison', 'yellow_unison'):
+            try:
+                if find(name, threshold=0.7):
+                    return True
+            except TypeError:
+                return False
+        return False
 
     def _heavy_if_bar_full(self):
-        # 只有上方能量條滿了才重擊。沒滿就繼續普攻。
-        if getattr(self, '_shore_heavied', False) or not self.is_mouse_forte_full():
+        # 只有上方能量條滿了才重擊。同一條沒消退之前不重覆按，免得站在重擊裡不打。
+        full = bool(self.is_mouse_forte_full())
+        if not full:
+            self._shore_bar_spent = True
+            return False
+        if getattr(self, '_shore_heavied', False) and not getattr(self, '_shore_bar_spent', True):
             return False
         self._shore_heavied = True
+        self._shore_bar_spent = False
         self.check_combat()
         down = getattr(self.task, 'mouse_down', None)
         up = getattr(self.task, 'mouse_up', None)
@@ -200,22 +254,6 @@ class ShoreKeeper(BaseChar):
             up()
         self.sleep(0.1)
         return True
-
-    def _farm_clicks(self, count):
-        for _ in range(count):
-            self.check_combat()
-            self.click()
-            self.sleep(0.05)
-
-    def _attack_until(self, ready):
-        deadline = time.time() + getattr(self, 'fill_timeout', 12)
-        while time.time() < deadline:
-            self.check_combat()
-            if ready():
-                return True
-            self.click()
-            self.sleep(0.02)
-        return bool(ready())
 
     def _resonance_cast(self):
         result = self.click_resonance()
